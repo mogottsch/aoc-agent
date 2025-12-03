@@ -1,0 +1,25 @@
+[project]
+name = "aoc-agent"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.0",
+    "ruff>=0.14.7",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "tab"
+
+[tool.ruff.lint]
+select = ["ALL"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["aoc_agent"]

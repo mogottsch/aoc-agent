@@ -3,8 +3,10 @@ name = "aoc-agent"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
-    "httpx>=0.28.1",
-    "pydantic-ai>=1.26.0",
+	"beautifulsoup4>=4.14.3",
+	"httpx>=0.28.1",
+	"pydantic-ai>=1.26.0",
+	"typer>=0.20.0",
 ]
 
 [project.scripts]
@@ -26,8 +28,10 @@ ignore = [
 	"W191",
 	"D100",
 	"D101",
+	"D102",
 	"D103",
 	"D104",
+	"D107",
 	"TRY003",
 	"D203",
 	"D213",

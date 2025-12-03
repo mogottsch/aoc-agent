@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     openrouter_api_key: str = Field(alias="OPENROUTER_API_KEY")
     aoc_session_token: str = Field(alias="AOC_SESSION_TOKEN")
+    model: str = Field(default="x-ai/grok-4.1-fast:free", alias="MODEL")
 
 
 @lru_cache(maxsize=1)

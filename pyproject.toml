@@ -2,7 +2,10 @@
 name = "aoc-agent"
 version = "0.1.0"
 requires-python = ">=3.13"
-dependencies = ["pydantic-ai>=1.26.0"]
+dependencies = [
+    "httpx>=0.28.1",
+    "pydantic-ai>=1.26.0",
+]
 
 [project.scripts]
 aoc-agent = "aoc_agent.agent:main"

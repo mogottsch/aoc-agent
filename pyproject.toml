@@ -2,13 +2,13 @@
 name = "aoc-agent"
 version = "0.1.0"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = ["pydantic-ai>=1.26.0"]
+
+[project.scripts]
+aoc-agent = "aoc_agent.agent:main"
 
 [dependency-groups]
-dev = [
-    "pre-commit>=4.5.0",
-    "ruff>=0.14.7",
-]
+dev = ["pre-commit>=4.5.0", "ruff>=0.14.7"]
 
 [tool.ruff]
 target-version = "py313"
@@ -16,10 +16,25 @@ line-length = 100
 
 [tool.ruff.format]
 quote-style = "double"
-indent-style = "tab"
 
 [tool.ruff.lint]
 select = ["ALL"]
+ignore = [
+	"W191",
+	"D100",
+	"D101",
+	"D103",
+	"D104",
+	"TRY003",
+	"D203",
+	"D213",
+	"COM812",
+	"EM101",
+	"T201",
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["aoc_agent"]
+
+[tool.uv]
+package = true

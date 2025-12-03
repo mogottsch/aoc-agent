@@ -12,8 +12,6 @@ uv sync
 2. Create a `.env` file with the following variables:
 ```env
 OPENROUTER_API_KEY=your_openrouter_api_key
-AOC_DAY=1
-AOC_YEAR=2024
 AOC_SESSION_TOKEN=your_session_token
 ```
 
@@ -28,7 +26,12 @@ AOC_SESSION_TOKEN=your_session_token
 
 ## Usage
 
-Run the agent:
+Fetch AOC data for a specific day:
 ```bash
-uv run aoc-agent
+uv run aoc-agent fetch 2024 1
+```
+
+Test the agent:
+```bash
+uv run aoc-agent test
 ```

@@ -31,7 +31,18 @@ Fetch AOC data for a specific day:
 uv run aoc-agent fetch 2024 1
 ```
 
-Test the agent:
+Solve a puzzle with the agent:
 ```bash
-uv run aoc-agent test
+uv run aoc-agent solve 2024 1
 ```
+
+## Logfire
+
+Traces stream to Logfire Cloud once you log in:
+
+```bash
+uv run logfire auth
+uv run logfire projects new      # or `projects use`
+```
+
+After that, every `uv run aoc-agent ...` shows the inline summary and appears in the selected project.

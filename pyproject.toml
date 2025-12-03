@@ -5,6 +5,7 @@ requires-python = ">=3.13"
 dependencies = [
 	"beautifulsoup4>=4.14.3",
 	"httpx>=0.28.1",
+	"logfire>=3.2.0",
 	"pydantic-ai>=1.26.0",
 	"typer>=0.20.0",
 ]

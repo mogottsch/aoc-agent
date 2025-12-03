@@ -1,6 +1,12 @@
+from functools import lru_cache
 from pathlib import Path
 
 from aoc_agent.adapters.aoc.models import AOCData, ProblemHTML
+
+
+@lru_cache(maxsize=1)
+def get_cache() -> "FileCache":
+    return FileCache(Path("cache"))
 
 
 class FileCache:

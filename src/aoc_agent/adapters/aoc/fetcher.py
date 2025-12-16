@@ -16,7 +16,7 @@ def _is_part2_unlocked(articles: list["Tag"]) -> bool:
 
 
 def _has_full_completion(main: Tag | None) -> bool:
-    return bool(main and "day-success" in str(main))
+    return bool(main and "Both parts of this puzzle are complete" in str(main))
 
 
 def _build_part1_html(first_article: Tag, articles: list[Tag]) -> str | None:

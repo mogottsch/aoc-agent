@@ -1,10 +1,10 @@
 import logfire
 import typer
 
-from aoc_agent.adapters.storage.data_store import get_data_store
+from aoc_agent.adapters.aoc.service import get_aoc_data_service
 from aoc_agent.core.models import SolutionError, SolutionOutput
 from aoc_agent.core.settings import get_settings
-from aoc_agent.solver import _create_agent, _create_context, ensure_data, run_agent
+from aoc_agent.solver import _create_agent, _create_context, run_agent
 
 logfire.configure()
 logfire.instrument_pydantic_ai()
@@ -13,10 +13,10 @@ app = typer.Typer()
 
 def _solve_day(year: int, day: int) -> None:
     settings = get_settings()
-    store = get_data_store()
+    service = get_aoc_data_service()
 
-    data = ensure_data(year, day, store)
-    context = _create_context(year, day, data, settings, store)
+    data = service.get(year, day)
+    context = _create_context(year, day, data)
     agent = _create_agent(settings)
 
     result = run_agent(agent, context, model=settings.model)
@@ -33,7 +33,7 @@ def _solve_day(year: int, day: int) -> None:
 
 
 def _solve_year(year: int) -> None:
-    store = get_data_store()
+    service = get_aoc_data_service()
     settings = get_settings()
 
     typer.echo(f"🎄 Solving Advent of Code {year} 🎄")
@@ -44,15 +44,15 @@ def _solve_year(year: int) -> None:
     for day in range(1, 26):
         typer.echo(f"\n📅 Day {day}")
 
-        answers = store.get_answers(year, day)
+        answers = service.get_answers(year, day)
         if answers.part1 and answers.part2:
             typer.echo("   ✅ Already solved")
             solved_count += 1
             continue
 
         try:
-            data = ensure_data(year, day, store)
-            context = _create_context(year, day, data, settings, store)
+            data = service.get(year, day)
+            context = _create_context(year, day, data)
             agent = _create_agent(settings)
 
             result = run_agent(agent, context, model=settings.model)

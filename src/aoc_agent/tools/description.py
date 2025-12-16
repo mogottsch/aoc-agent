@@ -1,14 +1,22 @@
+import logfire
 from pydantic_ai import RunContext
 
+from aoc_agent.adapters.aoc.service import get_aoc_data_service
 from aoc_agent.tools.context import ToolContext
 
 
 def get_aoc_problem_description(ctx: RunContext[ToolContext]) -> str:
-    """Get the current Advent of Code problem description.
+    service = get_aoc_data_service()
+    data = service.get(ctx.deps.year, ctx.deps.day)
 
-    Returns the problem text, which updates to show Part 2 after Part 1 is solved.
-    """
+    logfire.info(
+        "get_aoc_problem_description",
+        year=ctx.deps.year,
+        day=ctx.deps.day,
+        part1_solved=ctx.deps.solve_status.part1_solved,
+    )
+
     if ctx.deps.solve_status.part1_solved:
-        return ctx.deps.problem_html.part1_solved_html or ctx.deps.problem_html.unsolved_html
+        return data.problem_html.part1_solved_html or data.problem_html.unsolved_html
 
-    return ctx.deps.problem_html.unsolved_html
+    return data.problem_html.unsolved_html

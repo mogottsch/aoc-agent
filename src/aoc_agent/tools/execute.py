@@ -1,4 +1,5 @@
 import io
+import traceback
 from contextlib import redirect_stderr, redirect_stdout
 
 from pydantic import BaseModel
@@ -34,9 +35,12 @@ def execute_python(ctx: RunContext[ToolContext], code: str) -> ExecuteResult:
             exec(code, globals_dict)  # noqa: S102
     except Exception as e:  # noqa: BLE001
         error_stderr = stderr_capture.getvalue()
-        error_msg = f"Error: {e}"
+        error_type = type(e).__name__
+        error_msg = f"{error_type}: {e}"
         if error_stderr:
             error_msg = f"{error_msg}\n{error_stderr}"
+        traceback_str = traceback.format_exc()
+        error_msg = f"{error_msg}\n{traceback_str}"
         return ExecuteResult(output="", error=error_msg)
 
     stdout = stdout_capture.getvalue()

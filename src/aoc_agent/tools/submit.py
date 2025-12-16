@@ -31,8 +31,16 @@ def submit_answer(ctx: RunContext[ToolContext], part: int, answer: str) -> bool:
 
     stored_result = _check_stored_answer(ctx.deps, part, answer)
     if stored_result is not None:
-        return stored_result
+        is_correct = stored_result
+    else:
+        client = get_aoc_client()
+        response_html = client.submit_answer(ctx.deps.year, ctx.deps.day, part, answer)
+        is_correct = _parse_submit_response(response_html)
 
-    client = get_aoc_client()
-    response_html = client.submit_answer(ctx.deps.year, ctx.deps.day, part, answer)
-    return _parse_submit_response(response_html)
+    if is_correct:
+        if part == 1:
+            ctx.deps.solve_status.part1_solved = True
+        else:
+            ctx.deps.solve_status.part2_solved = True
+
+    return is_correct

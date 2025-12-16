@@ -1,9 +1,8 @@
 from functools import lru_cache
 from pathlib import Path
 
-from bs4 import BeautifulSoup
-
 from aoc_agent.adapters.aoc.models import AOCData, ProblemHTML
+from aoc_agent.adapters.aoc.parser import extract_answer_from_html
 from aoc_agent.core.models import Answers
 
 
@@ -55,33 +54,25 @@ class AOCDataStore:
         if data.problem_html.part2_solved_html:
             part2_path.write_text(data.problem_html.part2_solved_html)
 
+    def merge(self, year: int, day: int, data: AOCData) -> None:
+        unsolved_path, part1_path, part2_path, input_path = self._get_paths(year, day)
+
+        if not unsolved_path.exists():
+            unsolved_path.write_text(data.problem_html.unsolved_html)
+        if not input_path.exists():
+            input_path.write_text(data.input_content)
+        if data.problem_html.part1_solved_html and not part1_path.exists():
+            part1_path.write_text(data.problem_html.part1_solved_html)
+        if data.problem_html.part2_solved_html and not part2_path.exists():
+            part2_path.write_text(data.problem_html.part2_solved_html)
+
     def exists(self, year: int, day: int) -> bool:
         unsolved_path, _, _, input_path = self._get_paths(year, day)
         return unsolved_path.exists() and input_path.exists()
 
-    def _extract_answer_from_html(self, html: str, article_index: int) -> int | str | None:
-        soup = BeautifulSoup(html, "html.parser")
-        articles = soup.find_all("article", class_="day-desc")
-        if len(articles) <= article_index:
-            return None
-
-        answer_tag = articles[article_index].find_next_sibling("p")
-        if not answer_tag or "Your puzzle answer was" not in str(answer_tag):
-            return None
-
-        code_tag = answer_tag.find("code")
-        if not code_tag:
-            return None
-
-        text = code_tag.get_text()
-        try:
-            return int(text)
-        except ValueError:
-            return text
-
     def _extract_answers(self, part1_html: str | None, part2_html: str | None) -> Answers:
-        part1 = self._extract_answer_from_html(part1_html, 0) if part1_html else None
-        part2 = self._extract_answer_from_html(part2_html, 1) if part2_html else None
+        part1 = extract_answer_from_html(part1_html, 1) if part1_html else None
+        part2 = extract_answer_from_html(part2_html, 2) if part2_html else None
         return Answers(part1=part1, part2=part2)
 
     def get_answers(self, year: int, day: int) -> Answers:

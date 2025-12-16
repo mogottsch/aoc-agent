@@ -1,0 +1,3 @@
+- have a better way to run python code and persist variables and functions between calls - jupyter kernel like (maybe with mcp)
+- set upper limit on execution time for each code execution
+- properly isolate code execution

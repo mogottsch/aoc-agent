@@ -1,111 +1,83 @@
 import logfire
 import typer
-from pydantic_ai import Agent
-from pydantic_ai.models.openrouter import OpenRouterModel
-from pydantic_ai.providers.openrouter import OpenRouterProvider
 
-from aoc_agent.adapters.aoc.fetcher import fetch_aoc_data
 from aoc_agent.adapters.storage.data_store import get_data_store
+from aoc_agent.core.models import SolutionError, SolutionOutput
 from aoc_agent.core.settings import get_settings
-from aoc_agent.tools.context import SolveStatus, ToolContext
-from aoc_agent.tools.description import get_aoc_problem_description
-from aoc_agent.tools.execute import execute_python
-from aoc_agent.tools.submit import submit_answer
+from aoc_agent.solver import _create_agent, _create_context, ensure_data, run_agent
 
 logfire.configure()
 logfire.instrument_pydantic_ai()
 app = typer.Typer()
 
 
-@app.command()
-def fetch(
-    year: int = typer.Argument(help="Year"),
-    day: int = typer.Argument(help="Day"),
-) -> None:
+def _solve_day(year: int, day: int) -> None:
+    settings = get_settings()
     store = get_data_store()
 
-    data = fetch_aoc_data(year=year, day=day)
-    store.store(year=year, day=day, data=data)
+    data = ensure_data(year, day, store)
+    context = _create_context(year, day, data, settings, store)
+    agent = _create_agent(settings)
 
-    typer.echo(f"Fetched and stored data for {year}/day {day}")
+    result = run_agent(agent, context, model=settings.model)
+
+    if isinstance(result, SolutionOutput):
+        typer.echo(f"Part 1: {result.part1}")
+        typer.echo(f"Part 2: {result.part2}")
+    else:
+        typer.echo(f"❌ Error: {result.error}")
+        if result.partial_part1:
+            typer.echo(f"   Partial Part 1: {result.partial_part1}")
+        if result.partial_part2:
+            typer.echo(f"   Partial Part 2: {result.partial_part2}")
+
+
+def _solve_year(year: int) -> None:
+    store = get_data_store()
+    settings = get_settings()
+
+    typer.echo(f"🎄 Solving Advent of Code {year} 🎄")
+    typer.echo("=" * 50)
+
+    solved_count = 0
+
+    for day in range(1, 26):
+        typer.echo(f"\n📅 Day {day}")
+
+        answers = store.get_answers(year, day)
+        if answers.part1 and answers.part2:
+            typer.echo("   ✅ Already solved")
+            solved_count += 1
+            continue
+
+        try:
+            data = ensure_data(year, day, store)
+            context = _create_context(year, day, data, settings, store)
+            agent = _create_agent(settings)
+
+            result = run_agent(agent, context, model=settings.model)
+
+            if isinstance(result, SolutionOutput):
+                typer.echo(f"   🎉 Solved! P1={result.part1} P2={result.part2}")
+                solved_count += 1
+            elif isinstance(result, SolutionError):
+                typer.echo(f"   ⚠️  {result.error}")
+        except Exception as e:  # noqa: BLE001
+            typer.echo(f"   ❌ Error: {e}")
+
+    typer.echo("\n" + "=" * 50)
+    typer.echo(f"📊 Summary: {solved_count}/25 days solved")
 
 
 @app.command()
 def solve(
     year: int = typer.Argument(help="Year"),
-    day: int = typer.Argument(help="Day"),
+    day: int | None = typer.Argument(default=None, help="Day (omit to solve entire year)"),
 ) -> None:
-    settings = get_settings()
-    store = get_data_store()
-
-    if not store.exists(year, day):
-        data = fetch_aoc_data(year=year, day=day)
-        store.store(year=year, day=day, data=data)
-        typer.echo(f"Fetched and stored data for {year}/day {day}")
-
-    data = store.get(year, day)
-    if not data:
-        message = f"Failed to get data for {year}/day {day}"
-        raise RuntimeError(message)
-
-    provider = OpenRouterProvider(api_key=settings.openrouter_api_key)
-    model = OpenRouterModel(settings.model, provider=provider)
-
-    answers = store.get_answers(year, day)
-
-    solve_status = SolveStatus(
-        part1_solved=False,
-        part2_solved=False,
-    )
-
-    context = ToolContext(
-        year=year,
-        day=day,
-        input_content=data.input_content,
-        session_token=settings.aoc_session_token,
-        problem_html=data.problem_html,
-        part1_answer=answers.part1,
-        part2_answer=answers.part2,
-        solve_status=solve_status,
-    )
-
-    agent = Agent(
-        model,
-        deps_type=ToolContext,
-        tools=[execute_python, submit_answer, get_aoc_problem_description],
-    )
-
-    initial_prompt = (
-        "Solve this Advent of Code problem.\n\n"
-        "You have the execute tool to run any Python code "
-        "(the input is available as 'input_content').\n"
-        "You have the submit tool to submit and check your answers.\n\n"
-        f"Problem:\n\n{data.problem_html.unsolved_html}"
-    )
-    message_history = None
-
-    for run_num in range(3):
-        if run_num == 0:
-            prompt = initial_prompt
-        else:
-            unsolved_parts = []
-            if not context.solve_status.part1_solved:
-                unsolved_parts.append("Part 1")
-            if not context.solve_status.part2_solved:
-                unsolved_parts.append("Part 2")
-            unsolved_text = " and ".join(unsolved_parts)
-            prompt = (
-                f"{unsolved_text} is still unsolved. "
-                "Continue and submit your solution via the submit tool."
-            )
-
-        result = agent.run_sync(prompt, deps=context, message_history=message_history)
-        print(result.output)
-
-        if context.solve_status.part1_solved and context.solve_status.part2_solved:
-            break
-
-        message_history = result.new_messages()
+    if day is None:
+        _solve_year(year)
+    else:
+        _solve_day(year, day)
 
 
 def main() -> None:

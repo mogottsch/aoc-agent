@@ -1,11 +1,7 @@
 from pydantic import BaseModel
 
 from aoc_agent.adapters.aoc.models import ProblemHTML
-
-
-class SolveStatus(BaseModel):
-    part1_solved: bool
-    part2_solved: bool
+from aoc_agent.core.models import Answers, SolveStatus
 
 
 class ToolContext(BaseModel):
@@ -14,6 +10,5 @@ class ToolContext(BaseModel):
     input_content: str
     session_token: str
     problem_html: ProblemHTML
-    part1_answer: str | None = None
-    part2_answer: str | None = None
+    answers: Answers
     solve_status: SolveStatus

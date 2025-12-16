@@ -10,8 +10,3 @@ class ProblemHTML(BaseModel):
 class AOCData(BaseModel):
     problem_html: ProblemHTML
     input_content: str
-
-
-class Answers(BaseModel):
-    part1: str | None = None
-    part2: str | None = None

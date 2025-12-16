@@ -3,9 +3,8 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-from aoc_agent.adapters.aoc.models import Answers, AOCData, ProblemHTML
-
-_MIN_ARTICLES_FOR_PART2 = 2
+from aoc_agent.adapters.aoc.models import AOCData, ProblemHTML
+from aoc_agent.core.models import Answers
 
 
 @lru_cache(maxsize=1)
@@ -60,31 +59,30 @@ class AOCDataStore:
         unsolved_path, _, _, input_path = self._get_paths(year, day)
         return unsolved_path.exists() and input_path.exists()
 
+    def _extract_answer_from_html(self, html: str, article_index: int) -> int | str | None:
+        soup = BeautifulSoup(html, "html.parser")
+        articles = soup.find_all("article", class_="day-desc")
+        if len(articles) <= article_index:
+            return None
+
+        answer_tag = articles[article_index].find_next_sibling("p")
+        if not answer_tag or "Your puzzle answer was" not in str(answer_tag):
+            return None
+
+        code_tag = answer_tag.find("code")
+        if not code_tag:
+            return None
+
+        text = code_tag.get_text()
+        try:
+            return int(text)
+        except ValueError:
+            return text
+
     def _extract_answers(self, part1_html: str | None, part2_html: str | None) -> Answers:
-        part1_answer = None
-        part2_answer = None
-
-        if part1_html:
-            soup = BeautifulSoup(part1_html, "html.parser")
-            articles = soup.find_all("article", class_="day-desc")
-            if articles:
-                answer_tag = articles[0].find_next_sibling("p")
-                if answer_tag and "Your puzzle answer was" in str(answer_tag):
-                    code_tag = answer_tag.find("code")
-                    if code_tag:
-                        part1_answer = code_tag.get_text()
-
-        if part2_html:
-            soup = BeautifulSoup(part2_html, "html.parser")
-            articles = soup.find_all("article", class_="day-desc")
-            if len(articles) >= _MIN_ARTICLES_FOR_PART2:
-                answer_tag = articles[1].find_next_sibling("p")
-                if answer_tag and "Your puzzle answer was" in str(answer_tag):
-                    code_tag = answer_tag.find("code")
-                    if code_tag:
-                        part2_answer = code_tag.get_text()
-
-        return Answers(part1=part1_answer, part2=part2_answer)
+        part1 = self._extract_answer_from_html(part1_html, 0) if part1_html else None
+        part2 = self._extract_answer_from_html(part2_html, 1) if part2_html else None
+        return Answers(part1=part1, part2=part2)
 
     def get_answers(self, year: int, day: int) -> Answers:
         data = self.get(year, day)

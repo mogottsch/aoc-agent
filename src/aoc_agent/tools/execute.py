@@ -1,10 +1,10 @@
-import io
-import traceback
-from contextlib import redirect_stderr, redirect_stdout
+from typing import cast
 
+from jupyter_client.asynchronous.client import AsyncKernelClient
 from pydantic import BaseModel
 from pydantic_ai import RunContext
 
+from aoc_agent.adapters.execution.jupyter_executor import JupyterExecutor
 from aoc_agent.tools.context import ToolContext
 
 
@@ -13,37 +13,12 @@ class ExecuteResult(BaseModel):
     error: str
 
 
-INPUT_CONTENT_VAR = "input_content"
+async def execute_python(ctx: RunContext[ToolContext], code: str) -> ExecuteResult:
+    client = ctx.deps.kernel_client
+    if client is None:
+        raise RuntimeError("kernel_client not set")
 
-
-def execute_python(ctx: RunContext[ToolContext], code: str) -> ExecuteResult:
-    """
-    Executes the provided Python code and captures its output and errors.
-
-    To retrieve the output the code needs to print it to stdout. You will not
-    be able to return values directly.
-    The content of the input.txt file as downloaded from AoC is available in
-    the variable `input_content`.
-    """
-    stdout_capture = io.StringIO()
-    stderr_capture = io.StringIO()
-
-    globals_dict = {INPUT_CONTENT_VAR: ctx.deps.input_content}
-
-    try:
-        with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-            exec(code, globals_dict)  # noqa: S102
-    except Exception as e:  # noqa: BLE001
-        error_stderr = stderr_capture.getvalue()
-        error_type = type(e).__name__
-        error_msg = f"{error_type}: {e}"
-        if error_stderr:
-            error_msg = f"{error_msg}\n{error_stderr}"
-        traceback_str = traceback.format_exc()
-        error_msg = f"{error_msg}\n{traceback_str}"
-        return ExecuteResult(output="", error=error_msg)
-
-    stdout = stdout_capture.getvalue()
-    stderr = stderr_capture.getvalue()
-
+    kernel_client = cast(AsyncKernelClient, client)
+    executor = JupyterExecutor(kernel_client)
+    stdout, stderr = await executor.execute(code, input_content=ctx.deps.input_content)
     return ExecuteResult(output=stdout, error=stderr)

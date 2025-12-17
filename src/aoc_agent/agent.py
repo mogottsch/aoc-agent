@@ -1,10 +1,12 @@
+import asyncio
+
 import logfire
 import typer
 
 from aoc_agent.adapters.aoc.service import get_aoc_data_service
 from aoc_agent.core.models import SolutionError, SolutionOutput
 from aoc_agent.core.settings import get_settings
-from aoc_agent.solver import _create_agent, _create_context, run_agent
+from aoc_agent.solver import _create_context, run_agent
 
 logfire.configure()
 logfire.instrument_pydantic_ai()
@@ -17,9 +19,7 @@ def _solve_day(year: int, day: int) -> None:
 
     data = service.get(year, day)
     context = _create_context(year, day, data)
-    agent = _create_agent(settings)
-
-    result = run_agent(agent, context, model=settings.model)
+    result = asyncio.run(run_agent(settings, context, model=settings.model))
 
     if isinstance(result, SolutionOutput):
         typer.echo(f"Part 1: {result.part1}")
@@ -53,9 +53,7 @@ def _solve_year(year: int) -> None:
         try:
             data = service.get(year, day)
             context = _create_context(year, day, data)
-            agent = _create_agent(settings)
-
-            result = run_agent(agent, context, model=settings.model)
+            result = asyncio.run(run_agent(settings, context, model=settings.model))
 
             if isinstance(result, SolutionOutput):
                 typer.echo(f"   🎉 Solved! P1={result.part1} P2={result.part2}")

@@ -5,6 +5,7 @@ from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 from aoc_agent.adapters.aoc.models import AOCData
 from aoc_agent.adapters.aoc.service import get_aoc_data_service
+from aoc_agent.adapters.execution.jupyter import jupyter_context
 from aoc_agent.core.models import SolutionError, SolutionOutput, SolverResult, SolveStatus
 from aoc_agent.core.settings import Settings
 from aoc_agent.tools.context import ToolContext
@@ -16,7 +17,7 @@ from aoc_agent.tools.submit import submit_answer
 INITIAL_PROMPT = (
     "Solve this Advent of Code problem.\n\n"
     "Tools:\n"
-    "- execute: Run Python code\n"
+    "- execute_python: Run Python code\n"
     "- submit: Submit and verify your answer\n"
     "- get_aoc_problem_description: Get updated problem text\n"
     "- sleep: Wait for specified seconds (use when rate limited)\n\n"
@@ -30,7 +31,9 @@ INITIAL_PROMPT = (
 )
 
 
-def _create_agent(settings: Settings) -> Agent[ToolContext, SolverResult]:
+def _create_agent(
+    settings: Settings,
+) -> Agent[ToolContext, SolverResult]:
     provider = OpenRouterProvider(api_key=settings.openrouter_api_key)
     model = OpenRouterModel(settings.model, provider=provider)
     return Agent[ToolContext, SolverResult](
@@ -50,19 +53,21 @@ def _create_context(year: int, day: int, data: AOCData) -> ToolContext:
     )
 
 
-def run_agent(
-    agent: Agent[ToolContext, SolverResult],
+async def run_agent(
+    settings: Settings,
     context: ToolContext,
     model: str,
 ) -> SolverResult:
     service = get_aoc_data_service()
     data = service.get(context.year, context.day)
     prompt = INITIAL_PROMPT.format(problem_html=data.problem_html.unsolved_html)
-    with logfire.span(
-        "solve {year}/day{day}",
-        year=context.year,
-        day=context.day,
-        model=model,
-    ):
-        result = agent.run_sync(prompt, deps=context)
+    agent = _create_agent(settings)
+    async with jupyter_context(context) as context_with_kernel, agent:
+        with logfire.span(
+            "solve {year}/day{day}",
+            year=context_with_kernel.year,
+            day=context_with_kernel.day,
+            model=model,
+        ):
+            result = await agent.run(prompt, deps=context_with_kernel)
     return result.output

@@ -5,11 +5,13 @@ An agent that solves Advent of Code problems using PydanticAI and OpenRouter.
 ## Setup
 
 1. Install dependencies:
+
 ```bash
 uv sync
 ```
 
 2. Create a `.env` file with the following variables:
+
 ```env
 OPENROUTER_API_KEY=your_openrouter_api_key
 AOC_SESSION_TOKEN=your_session_token
@@ -27,16 +29,19 @@ AOC_SESSION_TOKEN=your_session_token
 ## Usage
 
 Solve a single day:
+
 ```bash
 uv run aoc-agent solve 2024 1
 ```
 
 Solve an entire year:
+
 ```bash
 uv run aoc-agent solve-year 2024
 ```
 
 Fetch data for a specific day (without solving):
+
 ```bash
 uv run aoc-agent fetch 2024 1
 ```

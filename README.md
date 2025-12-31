@@ -31,19 +31,13 @@ AOC_SESSION_TOKEN=your_session_token
 Solve a single day:
 
 ```bash
-uv run aoc-agent solve 2024 1
+uv run aoc-agent 2024 1
 ```
 
 Solve an entire year:
 
 ```bash
-uv run aoc-agent solve-year 2024
-```
-
-Fetch data for a specific day (without solving):
-
-```bash
-uv run aoc-agent fetch 2024 1
+uv run aoc-agent 2024
 ```
 
 ## Logfire

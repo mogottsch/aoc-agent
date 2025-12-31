@@ -47,7 +47,7 @@ ignore = [
 known-first-party = ["aoc_agent"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["PLR2004", "S101"]
+"tests/**/*.py" = ["INP001", "PLR2004", "S101"]
 
 [tool.uv]
 package = true

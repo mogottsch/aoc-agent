@@ -11,6 +11,9 @@ class SubmitResult(SubmitResponse):
     pass
 
 
+_SUBMIT_CACHE: dict[tuple[int, int, int, int | str], SubmitResponse] = {}
+
+
 def _check_known(
     service: AOCDataService, year: int, day: int, part: int, answer: int | str
 ) -> SubmitResult | None:
@@ -49,6 +52,32 @@ def _streak_for_part(solve_status: SolveStatus, part: int) -> IncorrectSubmitStr
     return solve_status.part1_incorrect_streak if part == 1 else solve_status.part2_incorrect_streak
 
 
+def _submit_to_aoc_cached(
+    service: AOCDataService,
+    year: int,
+    day: int,
+    part: int,
+    answer: int | str,
+) -> SubmitResult:
+    cache_key = (year, day, part, answer)
+    cached = _SUBMIT_CACHE.get(cache_key)
+    if cached is not None:
+        return SubmitResult(
+            status=cached.status,
+            message=cached.message,
+            wait_seconds=cached.wait_seconds,
+        )
+
+    result = _submit_to_aoc(service, year, day, part, answer)
+    if result.status in {SubmitStatus.CORRECT, SubmitStatus.INCORRECT}:
+        _SUBMIT_CACHE[cache_key] = SubmitResponse(
+            status=result.status,
+            message=result.message,
+            wait_seconds=result.wait_seconds,
+        )
+    return result
+
+
 def submit_answer(ctx: RunContext[ToolContext], part: int, answer: int | str) -> SubmitResult:
     if part not in (1, 2):
         raise ValueError("part must be 1 or 2")
@@ -56,9 +85,9 @@ def submit_answer(ctx: RunContext[ToolContext], part: int, answer: int | str) ->
     year, day = ctx.deps.year, ctx.deps.day
     service = get_aoc_data_service()
 
-    result = _check_known(service, year, day, part, answer) or _submit_to_aoc(
-        service, year, day, part, answer
-    )
+    result = _check_known(service, year, day, part, answer)
+    if result is None:
+        result = _submit_to_aoc_cached(service, year, day, part, answer)
 
     incorrect_streak = _streak_for_part(ctx.deps.solve_status, part)
     if result.status == SubmitStatus.CORRECT:

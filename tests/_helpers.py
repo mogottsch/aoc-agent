@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import cast
 
 from pydantic_ai import RunContext
 
@@ -11,4 +12,4 @@ class FakeRunContext:
 
 
 def as_run_context(deps: ToolContext) -> RunContext[ToolContext]:
-    return FakeRunContext(deps)  # type: ignore[return-value]
+    return cast(RunContext[ToolContext], FakeRunContext(deps))

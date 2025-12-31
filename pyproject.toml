@@ -16,7 +16,12 @@ dependencies = [
 aoc-agent = "aoc_agent.agent:main"
 
 [dependency-groups]
-dev = ["pre-commit>=4.5.0", "ruff>=0.14.7"]
+dev = [
+	"pre-commit>=4.5.0",
+	"pytest-asyncio>=1.2.0",
+	"pytest>=8.4.0",
+	"ruff>=0.14.7",
+]
 
 [tool.ruff]
 target-version = "py313"
@@ -40,6 +45,9 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["aoc_agent"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["PLR2004", "S101"]
 
 [tool.uv]
 package = true

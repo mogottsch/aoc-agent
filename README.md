@@ -50,3 +50,26 @@ uv run logfire projects new      # or `projects use`
 ```
 
 After that, every `uv run aoc-agent ...` shows the inline summary and appears in the selected project.
+
+## Development
+
+Install git hooks:
+```bash
+uv sync --group dev
+uv run pre-commit install
+```
+
+Run all hooks:
+```bash
+uv run pre-commit run -a
+```
+
+Run lint:
+```bash
+uv run ruff check .
+```
+
+Run tests:
+```bash
+uv run pytest -q
+```

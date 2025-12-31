@@ -1,8 +1,9 @@
-from types import SimpleNamespace
-
 import pytest
 
+from aoc_agent.core.models import SolveStatus
+from aoc_agent.tools.context import ToolContext
 from aoc_agent.tools.execute import _truncate, execute_python
+from tests._helpers import as_run_context
 
 
 def test_truncate_noop() -> None:
@@ -29,7 +30,14 @@ async def test_execute_python_truncates_stdout_and_stderr(monkeypatch: pytest.Mo
             return "O" * 3000, "E" * 3000
 
     monkeypatch.setattr("aoc_agent.tools.execute.JupyterExecutor", FakeExecutor)
-    ctx = SimpleNamespace(deps=SimpleNamespace(kernel_client=object(), input_content="inp"))
+    deps = ToolContext(
+        year=2024,
+        day=1,
+        input_content="inp",
+        solve_status=SolveStatus(),
+        kernel_client=object(),
+    )
+    ctx = as_run_context(deps)
 
     result = await execute_python(ctx, "print(1)", max_output_length=2000)
     assert result.output.startswith("O" * 1000)

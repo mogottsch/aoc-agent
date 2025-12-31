@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 Answer = int | str
+INCORRECT_SUBMIT_LIMIT = 3
 
 
 class Answers(BaseModel):
@@ -8,9 +9,30 @@ class Answers(BaseModel):
     part2: Answer | None = None
 
 
+class IncorrectSubmitStreak(BaseModel):
+    answer: Answer | None = None
+    count: int = 0
+
+    def reset(self) -> None:
+        self.answer = None
+        self.count = 0
+
+    def record_incorrect(self, answer: Answer) -> None:
+        if self.answer == answer:
+            self.count += 1
+        else:
+            self.answer = answer
+            self.count = 1
+        if self.count >= INCORRECT_SUBMIT_LIMIT:
+            msg = f"same incorrect answer submitted {INCORRECT_SUBMIT_LIMIT} times: answer={answer}"
+            raise RuntimeError(msg)
+
+
 class SolveStatus(BaseModel):
     part1_solved: bool = False
     part2_solved: bool = False
+    part1_incorrect_streak: IncorrectSubmitStreak = Field(default_factory=IncorrectSubmitStreak)
+    part2_incorrect_streak: IncorrectSubmitStreak = Field(default_factory=IncorrectSubmitStreak)
 
 
 class SolutionOutput(BaseModel):

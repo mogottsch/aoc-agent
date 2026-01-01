@@ -1,10 +1,11 @@
 from typing import cast
 
+from jupyter_client import AsyncKernelManager
 from jupyter_client.asynchronous.client import AsyncKernelClient
 from pydantic import BaseModel
 from pydantic_ai import RunContext
 
-from aoc_agent.adapters.execution.jupyter_executor import JupyterExecutor
+from aoc_agent.adapters.execution.jupyter_executor import ExecutionTimeoutError, JupyterExecutor
 from aoc_agent.tools.context import ToolContext
 
 
@@ -21,15 +22,29 @@ def _truncate(text: str, max_len: int) -> str:
 
 
 async def execute_python(
-    ctx: RunContext[ToolContext], code: str, max_output_length: int = 2000
+    ctx: RunContext[ToolContext],
+    code: str,
+    max_output_length: int = 2000,
+    timeout_seconds: float = 30.0,
 ) -> ExecuteResult:
     client = ctx.deps.kernel_client
-    if client is None:
-        raise RuntimeError("kernel_client not set")
+    manager = ctx.deps.kernel_manager
+    if client is None or manager is None:
+        raise RuntimeError("kernel not configured")
 
-    kernel_client = cast(AsyncKernelClient, client)
-    executor = JupyterExecutor(kernel_client)
-    stdout, stderr = await executor.execute(code, input_content=ctx.deps.input_content)
+    executor = JupyterExecutor(
+        cast(AsyncKernelClient, client),
+        cast(AsyncKernelManager, manager),
+    )
+    try:
+        stdout, stderr = await executor.execute(
+            code,
+            input_content=ctx.deps.input_content,
+            timeout_seconds=timeout_seconds,
+        )
+    except ExecutionTimeoutError as e:
+        return ExecuteResult(output="", error=str(e))
+
     return ExecuteResult(
         output=_truncate(stdout, max_output_length),
         error=_truncate(stderr, max_output_length),

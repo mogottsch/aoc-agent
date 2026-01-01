@@ -27,6 +27,7 @@ INITIAL_PROMPT = (
     "- Store large data in variables rather than printing everything.\n"
     "- The `execute_python` output is truncated to 2000 characters by default.\n"
     "- You can increase `max_output_length` if you need to see more.\n"
+    "- Each `execute_python` call has a wall-clock timeout via `timeout_seconds` (default 30s).\n"
     "- The examples in the problem description are for understanding only, not the actual input.\n"
     "- You must solve both Part 1 and Part 2 before returning.\n"
     "- Use get_aoc_problem_description to see Part 2 after solving Part 1.\n"

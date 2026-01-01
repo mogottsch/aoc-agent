@@ -22,10 +22,16 @@ def test_truncate_middle_snip() -> None:
 @pytest.mark.asyncio
 async def test_execute_python_truncates_stdout_and_stderr(monkeypatch: pytest.MonkeyPatch) -> None:
     class FakeExecutor:
-        def __init__(self, _client: object) -> None:
+        def __init__(self, _client: object, _manager: object) -> None:
             pass
 
-        async def execute(self, _code: str, *, input_content: str) -> tuple[str, str]:
+        async def execute(
+            self,
+            _code: str,
+            *,
+            input_content: str,
+            timeout_seconds: float = 30.0,  # noqa: ARG002
+        ) -> tuple[str, str]:
             assert input_content == "inp"
             return "O" * 3000, "E" * 3000
 
@@ -36,6 +42,7 @@ async def test_execute_python_truncates_stdout_and_stderr(monkeypatch: pytest.Mo
         input_content="inp",
         solve_status=SolveStatus(),
         kernel_client=object(),
+        kernel_manager=object(),
     )
     ctx = as_run_context(deps)
 

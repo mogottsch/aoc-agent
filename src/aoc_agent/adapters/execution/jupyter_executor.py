@@ -1,6 +1,8 @@
+import asyncio
 import json
 from typing import Any
 
+from jupyter_client import AsyncKernelManager
 from jupyter_client.asynchronous.client import AsyncKernelClient
 from pydantic import BaseModel, TypeAdapter
 
@@ -12,18 +14,42 @@ class ExecuteResultPayload(BaseModel):
 EXECUTE_RESULT_PAYLOAD_ADAPTER = TypeAdapter(ExecuteResultPayload)
 
 
+class ExecutionTimeoutError(Exception):
+    def __init__(self, timeout_seconds: float) -> None:
+        super().__init__(f"Execution timed out after {timeout_seconds}s")
+        self.timeout_seconds = timeout_seconds
+
+
 class JupyterExecutor:
-    def __init__(self, client: AsyncKernelClient) -> None:
+    def __init__(self, client: AsyncKernelClient, manager: AsyncKernelManager) -> None:
         self._client = client
+        self._manager = manager
 
-    async def execute(self, code: str, *, input_content: str) -> tuple[str, str]:
+    async def execute(
+        self,
+        code: str,
+        *,
+        input_content: str,
+        timeout_seconds: float = 30.0,
+    ) -> tuple[str, str]:
         msg_id = self._client.execute(self._inject_input_content(input_content, code))
+        try:
+            async with asyncio.timeout(timeout_seconds):
+                return await self._collect(msg_id)
+        except TimeoutError:
+            await self._manager.interrupt_kernel()
+            await self._wait_for_idle(msg_id)
+            raise ExecutionTimeoutError(timeout_seconds) from None
 
+    async def _collect(self, msg_id: str) -> tuple[str, str]:
         stdout_parts: list[str] = []
         stderr_parts: list[str] = []
 
         while True:
-            msg = await self._client.get_iopub_msg(timeout=30)
+            try:
+                msg = await self._client.get_iopub_msg(timeout=1.0)
+            except TimeoutError:
+                continue
             if not self._is_parent(msg, msg_id):
                 continue
 
@@ -46,6 +72,20 @@ class JupyterExecutor:
                 continue
 
         return "".join(stdout_parts), "".join(stderr_parts)
+
+    async def _wait_for_idle(self, msg_id: str, *, max_seconds: float = 5.0) -> None:
+        async with asyncio.timeout(max_seconds):
+            while True:
+                try:
+                    msg = await self._client.get_iopub_msg(timeout=1.0)
+                except TimeoutError:
+                    continue
+                if not self._is_parent(msg, msg_id):
+                    continue
+                msg_type = msg["header"]["msg_type"]
+                content = msg["content"]
+                if self._is_idle(msg_type, content):
+                    return
 
     @staticmethod
     def _inject_input_content(input_content: str, code: str) -> str:

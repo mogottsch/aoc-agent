@@ -1,2 +1,1 @@
 - set upper limit on execution time for each code execution
-- limit code output to not fill up the context too fast

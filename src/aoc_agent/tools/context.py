@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
-from aoc_agent.adapters.execution.jupyter_executor import JupyterExecutor
+from aoc_agent.adapters.execution.jupyter_executor import Executor
 from aoc_agent.core.models import SolveStatus
 
 
@@ -11,4 +11,4 @@ class ToolContext(BaseModel):
     day: int
     input_content: str
     solve_status: SolveStatus
-    executor: JupyterExecutor | None = None
+    executor: Executor | None = None

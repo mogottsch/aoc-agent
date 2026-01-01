@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 from jupyter_client import AsyncKernelManager
 from jupyter_client.asynchronous.client import AsyncKernelClient
@@ -18,6 +18,17 @@ class ExecutionTimeoutError(Exception):
     def __init__(self, timeout_seconds: float) -> None:
         super().__init__(f"Execution timed out after {timeout_seconds}s")
         self.timeout_seconds = timeout_seconds
+
+
+@runtime_checkable
+class Executor(Protocol):
+    async def execute(
+        self,
+        code: str,
+        *,
+        input_content: str,
+        timeout_seconds: float = 30.0,
+    ) -> tuple[str, str]: ...
 
 
 class JupyterExecutor:

@@ -20,11 +20,8 @@ def test_truncate_middle_snip() -> None:
 
 
 @pytest.mark.asyncio
-async def test_execute_python_truncates_stdout_and_stderr(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_execute_python_truncates_stdout_and_stderr() -> None:
     class FakeExecutor:
-        def __init__(self, _client: object, _manager: object) -> None:
-            pass
-
         async def execute(
             self,
             _code: str,
@@ -35,14 +32,12 @@ async def test_execute_python_truncates_stdout_and_stderr(monkeypatch: pytest.Mo
             assert input_content == "inp"
             return "O" * 3000, "E" * 3000
 
-    monkeypatch.setattr("aoc_agent.tools.execute.JupyterExecutor", FakeExecutor)
     deps = ToolContext(
         year=2024,
         day=1,
         input_content="inp",
         solve_status=SolveStatus(),
-        kernel_client=object(),
-        kernel_manager=object(),
+        executor=FakeExecutor(),
     )
     ctx = as_run_context(deps)
 

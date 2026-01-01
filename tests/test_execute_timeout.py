@@ -1,7 +1,7 @@
 import pytest
 
 from aoc_agent.adapters.execution.jupyter import jupyter_context
-from aoc_agent.adapters.execution.jupyter_executor import ExecutionTimeoutError, JupyterExecutor
+from aoc_agent.adapters.execution.jupyter_executor import ExecutionTimeoutError
 from aoc_agent.core.models import SolveStatus
 from aoc_agent.tools.context import ToolContext
 
@@ -15,7 +15,8 @@ async def test_executor_times_out_and_interrupts_kernel() -> None:
         solve_status=SolveStatus(),
     )
     async with jupyter_context(base_ctx) as ctx:
-        executor = JupyterExecutor(ctx.kernel_client, ctx.kernel_manager)
+        executor = ctx.executor
+        assert executor is not None
 
         with pytest.raises(ExecutionTimeoutError) as exc_info:
             await executor.execute(
@@ -44,7 +45,8 @@ async def test_executor_completes_within_timeout() -> None:
         solve_status=SolveStatus(),
     )
     async with jupyter_context(base_ctx) as ctx:
-        executor = JupyterExecutor(ctx.kernel_client, ctx.kernel_manager)
+        executor = ctx.executor
+        assert executor is not None
 
         stdout, stderr = await executor.execute(
             "import time; time.sleep(0.05); print('done')",
@@ -65,7 +67,8 @@ async def test_interrupt_preserves_variables() -> None:
         solve_status=SolveStatus(),
     )
     async with jupyter_context(base_ctx) as ctx:
-        executor = JupyterExecutor(ctx.kernel_client, ctx.kernel_manager)
+        executor = ctx.executor
+        assert executor is not None
 
         await executor.execute("x = 42", input_content="", timeout_seconds=5.0)
 

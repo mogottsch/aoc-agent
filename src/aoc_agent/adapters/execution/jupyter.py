@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from jupyter_client import AsyncKernelManager
 
+from aoc_agent.adapters.execution.jupyter_executor import JupyterExecutor
 from aoc_agent.tools.context import ToolContext
 
 
@@ -15,8 +16,10 @@ async def jupyter_context(context: ToolContext) -> AsyncIterator[ToolContext]:
     client.start_channels()
     async with asyncio.timeout(30):
         await client.wait_for_ready()
+
+    executor = JupyterExecutor(client, km)
     try:
-        yield context.model_copy(update={"kernel_manager": km, "kernel_client": client})
+        yield context.model_copy(update={"executor": executor})
     finally:
         client.stop_channels()
         await km.shutdown_kernel(now=True)

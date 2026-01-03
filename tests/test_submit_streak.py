@@ -11,7 +11,7 @@ def test_submit_same_incorrect_answer_three_times_raises(monkeypatch: pytest.Mon
     def fake_check_known(*_args: object, **_kwargs: object) -> SubmitResult:
         return SubmitResult(status=SubmitStatus.INCORRECT)
 
-    monkeypatch.setattr("aoc_agent.tools.submit.get_aoc_data_service", lambda: object())
+    monkeypatch.setattr("aoc_agent.tools.submit.get_aoc_data_service", lambda **_: object())
     monkeypatch.setattr("aoc_agent.tools.submit._check_known", fake_check_known)
 
     deps = ToolContext(year=2024, day=1, input_content="", solve_status=SolveStatus())
@@ -33,7 +33,7 @@ def test_submit_cache_short_circuits_repeat_submissions(monkeypatch: pytest.Monk
         calls["count"] += 1
         return SubmitResult(status=SubmitStatus.INCORRECT)
 
-    monkeypatch.setattr("aoc_agent.tools.submit.get_aoc_data_service", lambda: object())
+    monkeypatch.setattr("aoc_agent.tools.submit.get_aoc_data_service", lambda **_: object())
     monkeypatch.setattr("aoc_agent.tools.submit._check_known", fake_check_known)
     monkeypatch.setattr("aoc_agent.tools.submit._submit_to_aoc", fake_submit_to_aoc)
 

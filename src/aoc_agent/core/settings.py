@@ -7,9 +7,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    openrouter_api_key: str = Field(alias="OPENROUTER_API_KEY")
+    api_base_url: str = Field(default="https://openrouter.ai/api/v1", alias="API_BASE_URL")
+    api_key: str = Field(alias="API_KEY")
     aoc_session_token: str = Field(alias="AOC_SESSION_TOKEN")
-    model: str = Field(default="x-ai/grok-4.1-fast:free", alias="MODEL")
+    model: str = Field(default="google/gemini-3-pro-preview", alias="MODEL")
 
 
 @lru_cache(maxsize=1)

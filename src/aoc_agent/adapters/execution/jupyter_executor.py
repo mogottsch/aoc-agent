@@ -1,5 +1,6 @@
 import asyncio
 import json
+import queue
 from typing import Any, Protocol, runtime_checkable
 
 from jupyter_client import AsyncKernelManager
@@ -59,7 +60,7 @@ class JupyterExecutor:
         while True:
             try:
                 msg = await self._client.get_iopub_msg(timeout=1.0)
-            except TimeoutError:
+            except (TimeoutError, queue.Empty):
                 continue
             if not self._is_parent(msg, msg_id):
                 continue
@@ -89,7 +90,7 @@ class JupyterExecutor:
             while True:
                 try:
                     msg = await self._client.get_iopub_msg(timeout=1.0)
-                except TimeoutError:
+                except (TimeoutError, queue.Empty):
                     continue
                 if not self._is_parent(msg, msg_id):
                     continue

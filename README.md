@@ -1,6 +1,6 @@
 # AOC Agent
 
-An agent that solves Advent of Code problems using PydanticAI and OpenRouter.
+An agent that solves Advent of Code problems using PydanticAI with any OpenAI-compatible API (GLM, OpenRouter, OpenAI, etc.).
 
 ## Setup
 
@@ -13,9 +13,23 @@ uv sync
 2. Create a `.env` file with the following variables:
 
 ```env
-OPENROUTER_API_KEY=your_openrouter_api_key
+API_KEY=your_api_key
+API_BASE_URL=your_api_base_url
+AOC_SESSION_TOKEN=your_session_token
+MODEL=model_name
+```
+
+**Examples:**
+
+For OpenRouter:
+```env
+API_KEY=your_openrouter_api_key
+API_BASE_URL=https://openrouter.ai/api/v1
+MODEL=google/gemini-3-pro-preview
 AOC_SESSION_TOKEN=your_session_token
 ```
+
+Note: `API_BASE_URL` is optional. If not provided, it defaults to OpenAI's base URL. All providers use the OpenAI-compatible API format.
 
 ## Getting Your AOC Session Token
 
@@ -28,17 +42,33 @@ AOC_SESSION_TOKEN=your_session_token
 
 ## Usage
 
-Solve a single day:
+Solve a single day (fetches from AOC if not cached, skips if already solved):
 
 ```bash
-uv run aoc-agent 2024 1
+uv run aoc-agent solve 2024 1
 ```
 
 Solve an entire year:
 
 ```bash
-uv run aoc-agent 2024
+uv run aoc-agent solve 2024
 ```
+
+Test a day using only cached data (offline mode, fails if data not in cache):
+
+```bash
+uv run aoc-agent test 2024 1
+```
+
+Test an entire year:
+
+```bash
+uv run aoc-agent test 2024
+```
+
+**Commands:**
+- `solve`: Fetches data from AOC website if not in cache, skips days that are already fully solved
+- `test`: Offline-only mode, uses cached data only. Useful for testing different models without network calls. Fails if data is not in cache.
 
 ## Logfire
 

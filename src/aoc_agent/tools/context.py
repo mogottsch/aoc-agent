@@ -12,3 +12,4 @@ class ToolContext(BaseModel):
     input_content: str
     solve_status: SolveStatus
     executor: Executor | None = None
+    offline: bool = False

@@ -87,7 +87,7 @@ def submit_answer(ctx: RunContext[ToolContext], part: int, answer: int | str) ->
         raise ValueError("part must be 1 or 2")
 
     year, day = ctx.deps.year, ctx.deps.day
-    service = get_aoc_data_service()
+    service = get_aoc_data_service(offline=ctx.deps.offline)
 
     result = _check_known(service, year, day, part, answer)
     if part == PART_2 and not service.is_part_solved(year, day, PART_1):
@@ -96,6 +96,11 @@ def submit_answer(ctx: RunContext[ToolContext], part: int, answer: int | str) ->
             message="Part 1 must be solved before submitting Part 2",
         )
     if result is None:
+        if ctx.deps.offline:
+            return SubmitResult(
+                status=SubmitStatus.ERROR,
+                message="Cannot submit answer in offline mode: answer is not in cache",
+            )
         result = _submit_to_aoc_cached(service, year, day, part, answer)
 
     incorrect_streak = _streak_for_part(ctx.deps.solve_status, part)

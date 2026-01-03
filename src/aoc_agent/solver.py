@@ -1,7 +1,7 @@
 import logfire
 from pydantic_ai import Agent
-from pydantic_ai.models.openrouter import OpenRouterModel
-from pydantic_ai.providers.openrouter import OpenRouterProvider
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
 
 from aoc_agent.adapters.aoc.models import AOCData
 from aoc_agent.adapters.aoc.service import get_aoc_data_service
@@ -39,8 +39,11 @@ INITIAL_PROMPT = (
 def _create_agent(
     settings: Settings,
 ) -> Agent[ToolContext, SolverResult]:
-    provider = OpenRouterProvider(api_key=settings.openrouter_api_key)
-    model = OpenRouterModel(settings.model, provider=provider)
+    provider = OpenAIProvider(
+        base_url=settings.api_base_url,
+        api_key=settings.api_key,
+    )
+    model = OpenAIChatModel(settings.model, provider=provider)
     return Agent[ToolContext, SolverResult](
         model,
         deps_type=ToolContext,
@@ -49,12 +52,13 @@ def _create_agent(
     )
 
 
-def _create_context(year: int, day: int, data: AOCData) -> ToolContext:
+def _create_context(year: int, day: int, data: AOCData, offline: bool = False) -> ToolContext:
     return ToolContext(
         year=year,
         day=day,
         input_content=data.input_content,
         solve_status=SolveStatus(),
+        offline=offline,
     )
 
 
@@ -63,7 +67,7 @@ async def run_agent(
     context: ToolContext,
     model: str,
 ) -> SolverResult:
-    service = get_aoc_data_service()
+    service = get_aoc_data_service(offline=context.offline)
     data = service.get(context.year, context.day)
     prompt = INITIAL_PROMPT.format(problem_html=data.problem_html.unsolved_html)
     agent = _create_agent(settings)

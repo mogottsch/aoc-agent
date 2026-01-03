@@ -41,13 +41,16 @@ ignore = [
 	"TC002",
 	"TC006",
 	"T201",
+	"FBT001",
+	"FBT002",
 ]
 
 [tool.ruff.lint.isort]
 known-first-party = ["aoc_agent"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["INP001", "PLR2004", "S101"]
+"tests/**/*.py" = ["INP001", "PLR2004", "S101", "ARG005"]
+"src/aoc_agent/agent.py" = ["PT028"]
 
 [tool.uv]
 package = true

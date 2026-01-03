@@ -21,7 +21,7 @@ def _check_known(
     stored = answers.part1 if part == PART_1 else answers.part2
     if stored is None:
         return None
-    status = SubmitStatus.CORRECT if stored == answer else SubmitStatus.INCORRECT
+    status = SubmitStatus.CORRECT if str(stored) == str(answer) else SubmitStatus.INCORRECT
     return SubmitResult(status=status)
 
 

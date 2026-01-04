@@ -154,6 +154,8 @@ dependencies = [
     { name = "jupyter-client" },
     { name = "logfire" },
     { name = "pydantic-ai" },
+    { name = "pyyaml" },
+    { name = "rich" },
     { name = "typer" },
 ]
 
@@ -173,6 +175,8 @@ requires-dist = [
     { name = "jupyter-client", specifier = ">=8.7.0" },
     { name = "logfire", specifier = ">=3.2.0" },
     { name = "pydantic-ai", specifier = ">=1.26.0" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
+    { name = "rich", specifier = ">=14.2.0" },
     { name = "typer", specifier = ">=0.20.0" },
 ]
 

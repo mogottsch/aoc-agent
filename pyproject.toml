@@ -9,6 +9,8 @@ dependencies = [
 	"jupyter-client>=8.7.0",
 	"logfire>=3.2.0",
 	"pydantic-ai>=1.26.0",
+	"pyyaml>=6.0.3",
+	"rich>=14.2.0",
 	"typer>=0.20.0",
 ]
 

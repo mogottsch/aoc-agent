@@ -1,1 +1,1 @@
-- set upper limit on execution time for each code execution
+- clean up jupyter executor

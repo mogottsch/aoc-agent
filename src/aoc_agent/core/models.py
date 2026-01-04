@@ -6,6 +6,10 @@ PART_1 = 1
 PART_2 = 2
 
 
+class SubmitLimitExceededError(Exception):
+    pass
+
+
 class Answers(BaseModel):
     part1: Answer | None = None
     part2: Answer | None = None
@@ -27,7 +31,7 @@ class IncorrectSubmitStreak(BaseModel):
             self.count = 1
         if self.count >= INCORRECT_SUBMIT_LIMIT:
             msg = f"same incorrect answer submitted {INCORRECT_SUBMIT_LIMIT} times: answer={answer}"
-            raise RuntimeError(msg)
+            raise SubmitLimitExceededError(msg)
 
 
 class SolveStatus(BaseModel):
@@ -49,3 +53,10 @@ class SolutionError(BaseModel):
 
 
 SolverResult = SolutionOutput | SolutionError
+
+
+class AgentRunResult(BaseModel):
+    output: SolverResult
+    input_tokens: int
+    output_tokens: int
+    trace_id: str

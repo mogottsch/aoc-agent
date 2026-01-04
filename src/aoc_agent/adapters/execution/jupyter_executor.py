@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import json
 import queue
 from typing import Any, Protocol, runtime_checkable
@@ -50,7 +51,8 @@ class JupyterExecutor:
                 return await self._collect(msg_id)
         except TimeoutError:
             await self._manager.interrupt_kernel()
-            await self._wait_for_idle(msg_id)
+            with contextlib.suppress(TimeoutError):
+                await self._wait_for_idle(msg_id)
             raise ExecutionTimeoutError(timeout_seconds) from None
 
     async def _collect(self, msg_id: str) -> tuple[str, str]:

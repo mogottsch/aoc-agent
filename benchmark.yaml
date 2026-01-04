@@ -1,0 +1,16 @@
+providers:
+  openrouter:
+    base_url: https://openrouter.ai/api/v1
+    api_key_env: OPENROUTER_API_KEY
+
+models:
+  - model: mistralai/devstral-2512:free
+    provider: openrouter
+  - model: x-ai/grok-code-fast-1
+    provider: openrouter
+  - model: deepseek/deepseek-v3.2
+    provider: openrouter
+
+years: [2023]
+
+parallelism: 3

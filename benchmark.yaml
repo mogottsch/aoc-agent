@@ -2,6 +2,9 @@ providers:
   openrouter:
     base_url: https://openrouter.ai/api/v1
     api_key_env: OPENROUTER_API_KEY
+  zai:
+    base_url: https://api.z.ai/api/paas/v4
+    api_key_env: GLM_API_KEY
 
 models:
   - model: mistralai/devstral-2512:free
@@ -12,6 +15,11 @@ models:
     provider: openrouter
   - model: minimax/minimax-m2.1
     provider: openrouter
+  - model: xiaomi/mimo-v2-flash:free
+    provider: openrouter
+    disable_tool_choice: true
+  - model: glm-4.7
+    provider: zai
 
 years: [2023]
 

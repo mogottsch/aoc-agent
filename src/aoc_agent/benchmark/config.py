@@ -4,6 +4,7 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel
 from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.profiles.openai import OpenAIModelProfile
 from pydantic_ai.providers.openai import OpenAIProvider
 
 
@@ -23,6 +24,7 @@ class ModelConfig(BaseModel):
     model: str
     provider: str
     parallelism: int | None = None
+    disable_tool_choice: bool = False
 
 
 class BenchmarkConfig(BaseModel):
@@ -38,9 +40,14 @@ def load_config(path: Path) -> BenchmarkConfig:
     return BenchmarkConfig.model_validate(data)
 
 
-def create_model(model_id: str, provider: ProviderConfig) -> OpenAIChatModel:
+def create_model(
+    model_id: str, provider: ProviderConfig, *, disable_tool_choice: bool = False
+) -> OpenAIChatModel:
     openai_provider = OpenAIProvider(
         base_url=provider.base_url,
         api_key=provider.get_api_key(),
     )
-    return OpenAIChatModel(model_id, provider=openai_provider)
+    profile = None
+    if disable_tool_choice:
+        profile = OpenAIModelProfile(openai_supports_tool_choice_required=False)
+    return OpenAIChatModel(model_id, provider=openai_provider, profile=profile)

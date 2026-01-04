@@ -3,6 +3,7 @@ from opentelemetry import trace
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.profiles.openai import OpenAIModelProfile
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.usage import RunUsage
 
@@ -83,7 +84,10 @@ def create_model_from_settings(settings: Settings) -> OpenAIChatModel:
         base_url=settings.api_base_url,
         api_key=settings.api_key,
     )
-    return OpenAIChatModel(settings.model, provider=provider)
+    profile = None
+    if settings.disable_tool_choice:
+        profile = OpenAIModelProfile(openai_supports_tool_choice_required=False)
+    return OpenAIChatModel(settings.model, provider=provider, profile=profile)
 
 
 def _create_context(year: int, day: int, data: AOCData, offline: bool = False) -> ToolContext:

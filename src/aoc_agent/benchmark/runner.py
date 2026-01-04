@@ -2,6 +2,7 @@ import asyncio
 import json
 import time
 from collections import Counter
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -40,6 +41,13 @@ class BenchmarkContext:
         self.live = live
 
 
+@dataclass
+class ModelRunConfig:
+    provider: ProviderConfig
+    semaphore: asyncio.Semaphore
+    disable_tool_choice: bool
+
+
 INFRASTRUCTURE_STATUS_CODES = {429, 500, 502, 503}
 
 
@@ -58,8 +66,10 @@ async def _execute_agent(
     provider_config: ProviderConfig,
     tool_context: ToolContext,
     run_usage: RunUsage,
+    *,
+    disable_tool_choice: bool = False,
 ) -> SolverResult:
-    model = create_model(model_id, provider_config)
+    model = create_model(model_id, provider_config, disable_tool_choice=disable_tool_choice)
     try:
         agent_result = await run_agent(
             model,
@@ -110,7 +120,7 @@ def _get_trace_id() -> str:
 
 async def _run_single(
     model_id: str,
-    provider_config: ProviderConfig,
+    run_config: ModelRunConfig,
     year: int,
     day: int,
     ctx: BenchmarkContext,
@@ -133,7 +143,13 @@ async def _run_single(
     with logfire.span("benchmark {model} {year}/day{day}", model=model_id, year=year, day=day):
         trace_id = _get_trace_id()
         try:
-            output = await _execute_agent(model_id, provider_config, tool_context, run_usage)
+            output = await _execute_agent(
+                model_id,
+                run_config.provider,
+                tool_context,
+                run_usage,
+                disable_tool_choice=run_config.disable_tool_choice,
+            )
         except InfrastructureError:
             ctx.progress.record_result(model_id, saved=False)
             ctx.live.update(ctx.progress.build_table())
@@ -199,19 +215,22 @@ async def run_benchmark(
     for model_id, count in task_counts.items():
         progress.init_model(model_id, count)
 
-    semaphores: dict[str, asyncio.Semaphore] = {}
-    providers: dict[str, ProviderConfig] = {}
+    model_configs: dict[str, ModelRunConfig] = {}
     for mc in config.models:
         parallelism = mc.parallelism if mc.parallelism is not None else config.parallelism
-        semaphores[mc.model] = asyncio.Semaphore(parallelism)
-        providers[mc.model] = config.providers[mc.provider]
+        model_configs[mc.model] = ModelRunConfig(
+            provider=config.providers[mc.provider],
+            semaphore=asyncio.Semaphore(parallelism),
+            disable_tool_choice=mc.disable_tool_choice,
+        )
 
     with Live(progress.build_table(), console=console, refresh_per_second=4) as live:
         ctx = BenchmarkContext(results_dir, progress, live)
 
         async def run_task(model_id: str, year: int, day: int) -> None:
-            async with semaphores[model_id]:
-                await _run_single(model_id, providers[model_id], year, day, ctx)
+            run_config = model_configs[model_id]
+            async with run_config.semaphore:
+                await _run_single(model_id, run_config, year, day, ctx)
 
         await asyncio.gather(*[run_task(m, y, d) for m, y, d in all_tasks])
 

@@ -1,10 +1,8 @@
 from pydantic import BaseModel, Field
 
+from aoc_agent.core.constants import INCORRECT_SUBMIT_LIMIT
+
 Answer = int | str
-INCORRECT_SUBMIT_LIMIT = 3
-PART_1 = 1
-PART_2 = 2
-DAY_25 = 25
 
 
 class SubmitLimitExceededError(Exception):

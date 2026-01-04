@@ -4,7 +4,8 @@ from typing import cast
 from aoc_agent.adapters.aoc.fetcher import fetch_aoc_data
 from aoc_agent.adapters.aoc.models import AOCData
 from aoc_agent.adapters.storage.data_store import AOCDataStore, get_data_store
-from aoc_agent.core.models import PART_1, Answers
+from aoc_agent.core.constants import Part
+from aoc_agent.core.models import Answers
 
 
 class AOCDataService:
@@ -39,7 +40,7 @@ class AOCDataService:
         if data is None:
             return False
 
-        if part == PART_1:
+        if part == Part.ONE:
             return data.problem_html.part1_solved_html is not None
 
         return data.problem_html.part2_solved_html is not None

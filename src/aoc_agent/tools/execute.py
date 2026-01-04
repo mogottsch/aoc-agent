@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 from pydantic_ai import RunContext
 
-from aoc_agent.adapters.execution.jupyter_executor import ExecutionTimeoutError
+from aoc_agent.adapters.execution.executor import ExecutionTimeoutError
+from aoc_agent.core.constants import DEFAULT_MAX_OUTPUT_LENGTH, DEFAULT_TIMEOUT_SECONDS
 from aoc_agent.tools.context import ToolContext
 
 
@@ -20,8 +21,8 @@ def _truncate(text: str, max_len: int) -> str:
 async def execute_python(
     ctx: RunContext[ToolContext],
     code: str,
-    max_output_length: int = 2000,
-    timeout_seconds: float = 30.0,
+    max_output_length: int = DEFAULT_MAX_OUTPUT_LENGTH,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
 ) -> ExecuteResult:
     if ctx.deps.executor is None:
         raise RuntimeError("kernel not configured")

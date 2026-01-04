@@ -1,0 +1,11 @@
+from enum import IntEnum
+
+DAY_25 = 25
+DEFAULT_TIMEOUT_SECONDS = 30.0
+DEFAULT_MAX_OUTPUT_LENGTH = 2000
+INCORRECT_SUBMIT_LIMIT = 3
+
+
+class Part(IntEnum):
+    ONE = 1
+    TWO = 2

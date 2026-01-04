@@ -7,19 +7,25 @@ import typer
 from rich.traceback import install as install_rich_traceback
 
 from aoc_agent.adapters.aoc.service import get_aoc_data_service
+from aoc_agent.agent.factory import create_openai_model
+from aoc_agent.agent.runner import run_agent
 from aoc_agent.benchmark.config import load_config
 from aoc_agent.benchmark.report import generate_report
 from aoc_agent.benchmark.runner import run_benchmark
-from aoc_agent.core.models import DAY_25, SolutionError, SolutionOutput
+from aoc_agent.core.constants import DAY_25
+from aoc_agent.core.models import SolutionError, SolutionOutput, SolveStatus
 from aoc_agent.core.settings import get_settings
-from aoc_agent.solver import _create_context, create_model_from_settings, run_agent
+from aoc_agent.tools.context import ToolContext
 
 app = typer.Typer()
 
 
 def _configure_logfire(*, console: bool = True) -> None:
     install_rich_traceback(show_locals=False)
-    logfire.configure(console=console)
+    if console:
+        logfire.configure()
+    else:
+        logfire.configure(console=False)
     logfire.instrument_pydantic_ai()
 
 
@@ -35,8 +41,19 @@ def _solve_day(year: int, day: int, offline: bool = False) -> None:
 
     try:
         data = service.get(year, day)
-        context = _create_context(year, day, data, offline=offline)
-        model = create_model_from_settings(settings)
+        context = ToolContext(
+            year=year,
+            day=day,
+            input_content=data.input_content,
+            solve_status=SolveStatus(),
+            offline=offline,
+        )
+        model = create_openai_model(
+            model_name=settings.model,
+            base_url=settings.api_base_url,
+            api_key=settings.api_key,
+            disable_tool_choice=settings.disable_tool_choice,
+        )
         agent_result = asyncio.run(run_agent(model, context, model_name=settings.model))
 
         if isinstance(agent_result.output, SolutionOutput):

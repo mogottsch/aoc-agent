@@ -1,36 +1,24 @@
 import asyncio
-import json
 import time
 from collections import Counter
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
 
-import logfire
-from opentelemetry import trace
-from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior, UsageLimitExceeded
 from pydantic_ai.usage import RunUsage
 from rich.console import Console
 from rich.live import Live
 
 from aoc_agent.adapters.aoc.service import get_aoc_data_service
-from aoc_agent.benchmark.config import BenchmarkConfig, ProviderConfig, create_model
+from aoc_agent.benchmark.config import BenchmarkConfig, ProviderConfig
+from aoc_agent.benchmark.execution import create_benchmark_result, execute_benchmark
 from aoc_agent.benchmark.progress import ProgressTracker
 from aoc_agent.benchmark.results import (
-    BenchmarkResult,
     append_result,
     get_result_path,
     load_results,
 )
-from aoc_agent.core.models import (
-    DAY_25,
-    SolutionError,
-    SolutionOutput,
-    SolverResult,
-    SolveStatus,
-    SubmitLimitExceededError,
-)
-from aoc_agent.solver import run_agent
+from aoc_agent.core.exceptions import InfrastructureError
+from aoc_agent.core.models import SolveStatus
 from aoc_agent.tools.context import ToolContext
 
 
@@ -46,97 +34,7 @@ class ModelRunConfig:
     provider: ProviderConfig
     semaphore: asyncio.Semaphore
     disable_tool_choice: bool
-
-
-HTTP_TOO_MANY_REQUESTS = 429
-INFRASTRUCTURE_STATUS_CODES = {500, 502, 503}
-
-
-class InfrastructureError(Exception):
-    pass
-
-
-def _is_billing_error(e: ModelHTTPError) -> bool:
-    if e.status_code != HTTP_TOO_MANY_REQUESTS:
-        return False
-    error_str = str(e).lower()
-    body = getattr(e, "body", None)
-    if isinstance(body, dict):
-        code = body.get("code")
-        message = str(body.get("message", "")).lower()
-        if code == "1113" or "insufficient balance" in message or "recharge" in message:
-            return True
-    return (
-        "insufficient balance" in error_str or "recharge" in error_str or "code': '1113'" in str(e)
-    )
-
-
-def _check_answer(known: str | int | None, answer: str | None) -> bool | None:
-    if known is None or answer is None:
-        return None
-    return str(known) == answer
-
-
-async def _execute_agent(  # noqa: C901
-    model_id: str,
-    provider_config: ProviderConfig,
-    tool_context: ToolContext,
-    run_usage: RunUsage,
-    *,
-    disable_tool_choice: bool = False,
-) -> SolverResult:
-    model = create_model(model_id, provider_config, disable_tool_choice=disable_tool_choice)
-    try:
-        agent_result = await run_agent(
-            model,
-            tool_context,
-            model_name=model_id,
-            allow_sleep=False,
-            run_usage=run_usage,
-        )
-    except SubmitLimitExceededError as e:
-        return SolutionError(error=str(e))
-    except UsageLimitExceeded as e:
-        return SolutionError(error=str(e))
-    except UnexpectedModelBehavior as e:
-        return SolutionError(error=str(e))
-    except ModelHTTPError as e:
-        if _is_billing_error(e):
-            msg = f"Billing/quota error: {e}"
-            raise InfrastructureError(msg) from e
-        if e.status_code in INFRASTRUCTURE_STATUS_CODES:
-            raise InfrastructureError(str(e)) from e
-        if e.status_code == HTTP_TOO_MANY_REQUESTS:
-            raise InfrastructureError(str(e)) from e
-        raise
-    except OSError as e:
-        if "Too many open files" in str(e):
-            raise InfrastructureError(str(e)) from e
-        raise
-    except json.JSONDecodeError as e:
-        msg = f"API returned invalid JSON: {e}"
-        raise InfrastructureError(msg) from e
-    else:
-        return agent_result.output
-
-
-def _extract_answers(output: SolverResult) -> tuple[str | None, str | None]:
-    if isinstance(output, SolutionOutput):
-        return str(output.part1), str(output.part2)
-    p1 = str(output.partial_part1) if output.partial_part1 else None
-    p2 = str(output.partial_part2) if output.partial_part2 else None
-    return p1, p2
-
-
-def _extract_error(output: SolverResult) -> str | None:
-    if isinstance(output, SolutionOutput):
-        return None
-    return output.error
-
-
-def _get_trace_id() -> str:
-    span_context = trace.get_current_span().get_span_context()
-    return f"{span_context.trace_id:032x}"
+    openrouter_provider: str | None
 
 
 async def _run_single(
@@ -160,40 +58,31 @@ async def _run_single(
 
     run_usage = RunUsage()
     start = time.perf_counter()
-
-    with logfire.span("benchmark {model} {year}/day{day}", model=model_id, year=year, day=day):
-        trace_id = _get_trace_id()
-        try:
-            output = await _execute_agent(
-                model_id,
-                run_config.provider,
-                tool_context,
-                run_usage,
-                disable_tool_choice=run_config.disable_tool_choice,
-            )
-        except InfrastructureError:
-            ctx.progress.record_result(model_id, saved=False)
-            ctx.live.update(ctx.progress.build_table())
-            return
+    try:
+        output, trace_id = await execute_benchmark(
+            model_id,
+            run_config.provider,
+            tool_context,
+            run_usage,
+            disable_tool_choice=run_config.disable_tool_choice,
+            openrouter_provider=run_config.openrouter_provider,
+        )
+    except InfrastructureError:
+        ctx.progress.record_result(model_id, saved=False)
+        ctx.live.update(ctx.progress.build_table())
+        return
 
     duration = time.perf_counter() - start
-    part1, part2 = _extract_answers(output)
-    error = _extract_error(output)
-
-    part2_correct: bool | None = True if day == DAY_25 else _check_answer(known.part2, part2)
-
-    result = BenchmarkResult(
-        model=model_id,
+    result = create_benchmark_result(
+        model_id=model_id,
         year=year,
         day=day,
-        part1_correct=_check_answer(known.part1, part1),
-        part2_correct=part2_correct,
+        known_part1=known.part1,
+        known_part2=known.part2,
+        output=output,
         duration_seconds=duration,
-        input_tokens=run_usage.input_tokens,
-        output_tokens=run_usage.output_tokens,
-        error=error,
+        run_usage=run_usage,
         trace_id=trace_id,
-        timestamp=datetime.now(tz=UTC),
     )
 
     output_path = get_result_path(ctx.results_dir, model_id, year)
@@ -243,6 +132,7 @@ async def run_benchmark(
             provider=config.providers[mc.provider],
             semaphore=asyncio.Semaphore(parallelism),
             disable_tool_choice=mc.disable_tool_choice,
+            openrouter_provider=mc.openrouter_provider,
         )
 
     with Live(progress.build_table(), console=console, refresh_per_second=4) as live:

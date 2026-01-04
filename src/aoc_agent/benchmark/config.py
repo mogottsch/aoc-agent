@@ -2,10 +2,7 @@ import os
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel
-from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.profiles.openai import OpenAIModelProfile
-from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic import BaseModel, ValidationInfo, field_validator
 
 
 class ProviderConfig(BaseModel):
@@ -25,6 +22,21 @@ class ModelConfig(BaseModel):
     provider: str
     parallelism: int | None = None
     disable_tool_choice: bool = False
+    openrouter_provider: str | None = None
+
+    @field_validator("openrouter_provider")
+    @classmethod
+    def validate_openrouter_provider(cls, v: str | None, info: ValidationInfo) -> str | None:
+        if v is not None and info.data.get("provider") != "openrouter":
+            raise ValueError("openrouter_provider can only be set when provider is 'openrouter'")
+        return v
+
+    @field_validator("disable_tool_choice")
+    @classmethod
+    def validate_disable_tool_choice(cls, v: bool, info: ValidationInfo) -> bool:
+        if v and info.data.get("provider") != "openrouter":
+            raise ValueError("disable_tool_choice can only be set when provider is 'openrouter'")
+        return v
 
 
 class BenchmarkConfig(BaseModel):
@@ -38,16 +50,3 @@ def load_config(path: Path) -> BenchmarkConfig:
     with path.open() as f:
         data = yaml.safe_load(f)
     return BenchmarkConfig.model_validate(data)
-
-
-def create_model(
-    model_id: str, provider: ProviderConfig, *, disable_tool_choice: bool = False
-) -> OpenAIChatModel:
-    openai_provider = OpenAIProvider(
-        base_url=provider.base_url,
-        api_key=provider.get_api_key(),
-    )
-    profile = None
-    if disable_tool_choice:
-        profile = OpenAIModelProfile(openai_supports_tool_choice_required=False)
-    return OpenAIChatModel(model_id, provider=openai_provider, profile=profile)

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
-from aoc_agent.adapters.execution.jupyter_executor import Executor
+from aoc_agent.adapters.execution.executor import Executor
 from aoc_agent.core.models import SolveStatus
 
 

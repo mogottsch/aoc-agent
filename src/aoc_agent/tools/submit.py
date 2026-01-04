@@ -3,7 +3,8 @@ from pydantic_ai import RunContext
 from aoc_agent.adapters.aoc.client import get_aoc_client
 from aoc_agent.adapters.aoc.parser import SubmitResponse, SubmitStatus, parse_submit_response
 from aoc_agent.adapters.aoc.service import AOCDataService, get_aoc_data_service
-from aoc_agent.core.models import DAY_25, PART_1, PART_2, IncorrectSubmitStreak, SolveStatus
+from aoc_agent.core.constants import DAY_25, Part
+from aoc_agent.core.models import IncorrectSubmitStreak, SolveStatus
 from aoc_agent.tools.context import ToolContext
 
 
@@ -11,14 +12,25 @@ class SubmitResult(SubmitResponse):
     pass
 
 
-_SUBMIT_CACHE: dict[tuple[int, int, int, int | str], SubmitResponse] = {}
+class SubmitCache:
+    def __init__(self) -> None:
+        self._cache: dict[tuple[int, int, int, str], SubmitResponse] = {}
+
+    def get(self, year: int, day: int, part: int, answer: str) -> SubmitResponse | None:
+        return self._cache.get((year, day, part, answer))
+
+    def set(self, year: int, day: int, part: int, answer: str, response: SubmitResponse) -> None:
+        self._cache[(year, day, part, answer)] = response
+
+
+_submit_cache = SubmitCache()
 
 
 def _check_known(
     service: AOCDataService, year: int, day: int, part: int, answer: int | str
 ) -> SubmitResult | None:
     answers = service.get_answers(year, day)
-    stored = answers.part1 if part == PART_1 else answers.part2
+    stored = answers.part1 if part == Part.ONE else answers.part2
     if stored is None:
         return None
     status = SubmitStatus.CORRECT if str(stored) == str(answer) else SubmitStatus.INCORRECT
@@ -42,7 +54,7 @@ def _submit_to_aoc(
 
 
 def _mark_solved(solve_status: SolveStatus, part: int) -> None:
-    if part == PART_1:
+    if part == Part.ONE:
         solve_status.part1_solved = True
     else:
         solve_status.part2_solved = True
@@ -51,7 +63,7 @@ def _mark_solved(solve_status: SolveStatus, part: int) -> None:
 def _streak_for_part(solve_status: SolveStatus, part: int) -> IncorrectSubmitStreak:
     return (
         solve_status.part1_incorrect_streak
-        if part == PART_1
+        if part == Part.ONE
         else solve_status.part2_incorrect_streak
     )
 
@@ -63,8 +75,8 @@ def _submit_to_aoc_cached(
     part: int,
     answer: int | str,
 ) -> SubmitResult:
-    cache_key = (year, day, part, answer)
-    cached = _SUBMIT_CACHE.get(cache_key)
+    answer_str = str(answer)
+    cached = _submit_cache.get(year, day, part, answer_str)
     if cached is not None:
         return SubmitResult(
             status=cached.status,
@@ -74,19 +86,25 @@ def _submit_to_aoc_cached(
 
     result = _submit_to_aoc(service, year, day, part, answer)
     if result.status in {SubmitStatus.CORRECT, SubmitStatus.INCORRECT}:
-        _SUBMIT_CACHE[cache_key] = SubmitResponse(
-            status=result.status,
-            message=result.message,
-            wait_seconds=result.wait_seconds,
+        _submit_cache.set(
+            year,
+            day,
+            part,
+            answer_str,
+            SubmitResponse(
+                status=result.status,
+                message=result.message,
+                wait_seconds=result.wait_seconds,
+            ),
         )
     return result
 
 
 def submit_answer(ctx: RunContext[ToolContext], part: int, answer: int | str) -> SubmitResult:
-    if part not in (PART_1, PART_2):
+    if part not in (Part.ONE, Part.TWO):
         raise ValueError("part must be 1 or 2")
 
-    if part == PART_2 and ctx.deps.day == DAY_25:
+    if part == Part.TWO and ctx.deps.day == DAY_25:
         return SubmitResult(
             status=SubmitStatus.ERROR,
             message="Day 25 has no Part 2 submission",
@@ -96,7 +114,7 @@ def submit_answer(ctx: RunContext[ToolContext], part: int, answer: int | str) ->
     service = get_aoc_data_service(offline=ctx.deps.offline)
 
     result = _check_known(service, year, day, part, answer)
-    if part == PART_2 and not service.is_part_solved(year, day, PART_1):
+    if part == Part.TWO and not service.is_part_solved(year, day, Part.ONE):
         return SubmitResult(
             status=SubmitStatus.ERROR,
             message="Part 1 must be solved before submitting Part 2",

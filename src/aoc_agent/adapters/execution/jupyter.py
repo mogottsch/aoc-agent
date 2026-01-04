@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from jupyter_client import AsyncKernelManager
 
-from aoc_agent.adapters.execution.jupyter_executor import JupyterExecutor
+from aoc_agent.adapters.execution.executor import JupyterExecutor
 from aoc_agent.tools.context import ToolContext
 
 

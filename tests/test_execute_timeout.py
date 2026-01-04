@@ -1,7 +1,7 @@
 import pytest
 
+from aoc_agent.adapters.execution.executor import ExecutionTimeoutError
 from aoc_agent.adapters.execution.jupyter import jupyter_context
-from aoc_agent.adapters.execution.jupyter_executor import ExecutionTimeoutError
 from aoc_agent.core.models import SolveStatus
 from aoc_agent.tools.context import ToolContext
 

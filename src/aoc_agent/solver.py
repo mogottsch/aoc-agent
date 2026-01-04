@@ -10,6 +10,7 @@ from aoc_agent.adapters.aoc.models import AOCData
 from aoc_agent.adapters.aoc.service import get_aoc_data_service
 from aoc_agent.adapters.execution.jupyter import jupyter_context
 from aoc_agent.core.models import (
+    DAY_25,
     AgentRunResult,
     SolutionError,
     SolutionOutput,
@@ -24,7 +25,7 @@ from aoc_agent.tools.sleep import sleep
 from aoc_agent.tools.submit import submit_answer
 
 
-def _build_prompt(*, problem_html: str, allow_sleep: bool) -> str:
+def _build_prompt(*, problem_html: str, allow_sleep: bool, day: int) -> str:
     tools: list[str] = ["- execute_python: Run Python code"]
     tools.append("- submit: Submit and verify your answer")
     tools.append("- get_aoc_problem_description: Get updated problem text")
@@ -39,9 +40,16 @@ def _build_prompt(*, problem_html: str, allow_sleep: bool) -> str:
         "- You can increase `max_output_length` if you need to see more.",
         "- Each `execute_python` call has a wall-clock timeout via `timeout_seconds` (default 30s).",  # noqa: E501
         "- The examples in the problem description are for understanding only, not the actual input.",  # noqa: E501
-        "- You must solve both Part 1 and Part 2 before returning.",
-        "- Use get_aoc_problem_description to see Part 2 after submitting Part 1.",
     ]
+    if day == DAY_25:
+        instructions.append("- Note: Day 25 has no submit-able Part 2 answer; solve Part 1 only.")
+    else:
+        instructions.extend(
+            [
+                "- You must solve both Part 1 and Part 2 before returning.",
+                "- Use get_aoc_problem_description to see Part 2 after submitting Part 1.",
+            ]
+        )
     if allow_sleep:
         instructions.append(
             "- If rate limited, use the sleep tool with the suggested wait time, then retry."
@@ -107,6 +115,7 @@ async def run_agent(
     prompt = _build_prompt(
         problem_html=data.problem_html.unsolved_html,
         allow_sleep=allow_sleep,
+        day=context.day,
     )
     agent = _create_agent(model, allow_sleep=allow_sleep)
     async with jupyter_context(context) as context_with_kernel, agent:

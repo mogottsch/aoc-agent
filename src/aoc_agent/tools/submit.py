@@ -3,7 +3,7 @@ from pydantic_ai import RunContext
 from aoc_agent.adapters.aoc.client import get_aoc_client
 from aoc_agent.adapters.aoc.parser import SubmitResponse, SubmitStatus, parse_submit_response
 from aoc_agent.adapters.aoc.service import AOCDataService, get_aoc_data_service
-from aoc_agent.core.models import PART_1, PART_2, IncorrectSubmitStreak, SolveStatus
+from aoc_agent.core.models import DAY_25, PART_1, PART_2, IncorrectSubmitStreak, SolveStatus
 from aoc_agent.tools.context import ToolContext
 
 
@@ -85,6 +85,12 @@ def _submit_to_aoc_cached(
 def submit_answer(ctx: RunContext[ToolContext], part: int, answer: int | str) -> SubmitResult:
     if part not in (PART_1, PART_2):
         raise ValueError("part must be 1 or 2")
+
+    if part == PART_2 and ctx.deps.day == DAY_25:
+        return SubmitResult(
+            status=SubmitStatus.ERROR,
+            message="Day 25 has no Part 2 submission",
+        )
 
     year, day = ctx.deps.year, ctx.deps.day
     service = get_aoc_data_service(offline=ctx.deps.offline)

@@ -22,6 +22,7 @@ from aoc_agent.benchmark.results import (
     load_results,
 )
 from aoc_agent.core.models import (
+    DAY_25,
     SolutionError,
     SolutionOutput,
     SolverResult,
@@ -142,12 +143,14 @@ async def _run_single(
     part1, part2 = _extract_answers(output)
     error = _extract_error(output)
 
+    part2_correct: bool | None = True if day == DAY_25 else _check_answer(known.part2, part2)
+
     result = BenchmarkResult(
         model=model_id,
         year=year,
         day=day,
         part1_correct=_check_answer(known.part1, part1),
-        part2_correct=_check_answer(known.part2, part2),
+        part2_correct=part2_correct,
         duration_seconds=duration,
         input_tokens=run_usage.input_tokens,
         output_tokens=run_usage.output_tokens,

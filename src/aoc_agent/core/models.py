@@ -4,6 +4,7 @@ Answer = int | str
 INCORRECT_SUBMIT_LIMIT = 3
 PART_1 = 1
 PART_2 = 2
+DAY_25 = 25
 
 
 class SubmitLimitExceededError(Exception):

@@ -10,7 +10,7 @@ from aoc_agent.adapters.aoc.service import get_aoc_data_service
 from aoc_agent.benchmark.config import load_config
 from aoc_agent.benchmark.report import generate_report
 from aoc_agent.benchmark.runner import run_benchmark
-from aoc_agent.core.models import SolutionError, SolutionOutput
+from aoc_agent.core.models import DAY_25, SolutionError, SolutionOutput
 from aoc_agent.core.settings import get_settings
 from aoc_agent.solver import _create_context, create_model_from_settings, run_agent
 
@@ -28,7 +28,8 @@ def _solve_day(year: int, day: int, offline: bool = False) -> None:
     service = get_aoc_data_service(offline=offline)
 
     answers = service.get_answers(year, day)
-    if not offline and answers.part1 and answers.part2:
+    already_solved = bool(answers.part1) if day == DAY_25 else bool(answers.part1 and answers.part2)
+    if not offline and already_solved:
         typer.echo(f"   ✅ Day {day} already solved")
         return
 

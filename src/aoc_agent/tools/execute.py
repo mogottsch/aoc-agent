@@ -1,8 +1,12 @@
 from pydantic import BaseModel
 from pydantic_ai import RunContext
 
-from aoc_agent.adapters.execution.executor import ExecutionTimeoutError
-from aoc_agent.core.constants import DEFAULT_MAX_OUTPUT_LENGTH, DEFAULT_TIMEOUT_SECONDS
+from aoc_agent.adapters.execution.executor import ExecutionTimeoutError, TimeoutLimitExceededError
+from aoc_agent.core.constants import (
+    DEFAULT_MAX_OUTPUT_LENGTH,
+    DEFAULT_TIMEOUT_SECONDS,
+    MAX_TIMEOUT_SECONDS,
+)
 from aoc_agent.tools.context import ToolContext
 
 
@@ -26,6 +30,9 @@ async def execute_python(
 ) -> ExecuteResult:
     if ctx.deps.executor is None:
         raise RuntimeError("kernel not configured")
+
+    if timeout_seconds > MAX_TIMEOUT_SECONDS:
+        raise TimeoutLimitExceededError(timeout_seconds, MAX_TIMEOUT_SECONDS)
 
     try:
         stdout, stderr = await ctx.deps.executor.execute(

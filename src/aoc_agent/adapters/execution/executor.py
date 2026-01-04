@@ -22,6 +22,15 @@ class ExecutionTimeoutError(Exception):
         self.timeout_seconds = timeout_seconds
 
 
+class TimeoutLimitExceededError(Exception):
+    def __init__(self, requested_timeout: float, max_timeout: float) -> None:
+        super().__init__(
+            f"Requested timeout {requested_timeout}s exceeds maximum allowed {max_timeout}s"
+        )
+        self.requested_timeout = requested_timeout
+        self.max_timeout = max_timeout
+
+
 @runtime_checkable
 class Executor(Protocol):
     async def execute(

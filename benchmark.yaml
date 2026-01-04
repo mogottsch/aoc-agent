@@ -18,6 +18,11 @@ models:
   - model: xiaomi/mimo-v2-flash:free
     provider: openrouter
     disable_tool_choice: true
+  - model: kwaipilot/kat-coder-pro:free
+    provider: openrouter
+  - model: nvidia/nemotron-3-nano-30b-a3b:free
+    provider: openrouter
+    disable_tool_choice: true
   - model: glm-4.7
     provider: zai
 

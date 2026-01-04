@@ -39,3 +39,18 @@ def append_result(path: Path, result: BenchmarkResult) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a") as f:
         f.write(result.model_dump_json() + "\n")
+
+
+def load_all_results(results_dir: Path) -> list[BenchmarkResult]:
+    if not results_dir.exists():
+        return []
+    by_key: dict[tuple[str, int, int], BenchmarkResult] = {}
+    for jsonl_file in results_dir.glob("*.jsonl"):
+        for line in jsonl_file.read_text().strip().split("\n"):
+            if not line:
+                continue
+            r = BenchmarkResult.model_validate_json(line)
+            key = (r.model, r.year, r.day)
+            if key not in by_key or r.timestamp > by_key[key].timestamp:
+                by_key[key] = r
+    return list(by_key.values())

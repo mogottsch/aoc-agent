@@ -8,6 +8,7 @@ from rich.traceback import install as install_rich_traceback
 
 from aoc_agent.adapters.aoc.service import get_aoc_data_service
 from aoc_agent.benchmark.config import load_config
+from aoc_agent.benchmark.report import generate_report
 from aoc_agent.benchmark.runner import run_benchmark
 from aoc_agent.core.models import SolutionError, SolutionOutput
 from aoc_agent.core.settings import get_settings
@@ -96,6 +97,15 @@ def benchmark(
     benchmark_config = load_config(config)
     results_dir = Path("results")
     asyncio.run(run_benchmark(benchmark_config, results_dir, force))
+
+
+@app.command()
+def results() -> None:
+    results_dir = Path("results")
+    output_path = results_dir / "README.md"
+    markdown = generate_report(results_dir)
+    output_path.write_text(markdown)
+    typer.echo(f"Report written to {output_path}")
 
 
 def main() -> None:

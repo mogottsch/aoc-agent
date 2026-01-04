@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-aoc-agent = "aoc_agent.agent:main"
+aoc-agent = "aoc_agent.cli:main"
 
 [dependency-groups]
 dev = [
@@ -52,7 +52,7 @@ known-first-party = ["aoc_agent"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["INP001", "PLR2004", "S101", "ARG005"]
-"src/aoc_agent/agent.py" = ["PT028"]
+"src/aoc_agent/cli.py" = ["PT028"]
 
 [tool.uv]
 package = true

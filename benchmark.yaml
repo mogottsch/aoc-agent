@@ -10,6 +10,8 @@ models:
     provider: openrouter
   - model: deepseek/deepseek-v3.2
     provider: openrouter
+  - model: minimax/minimax-m2.1
+    provider: openrouter
 
 years: [2023]
 

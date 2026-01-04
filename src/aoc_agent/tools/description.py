@@ -6,7 +6,7 @@ from aoc_agent.tools.context import ToolContext
 
 
 def get_aoc_problem_description(ctx: RunContext[ToolContext]) -> str:
-    service = get_aoc_data_service()
+    service = get_aoc_data_service(offline=ctx.deps.offline)
     data = service.get(ctx.deps.year, ctx.deps.day)
 
     logfire.info(

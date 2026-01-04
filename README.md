@@ -70,10 +70,12 @@ uv run aoc-agent test 2024
 - `solve`: Fetches data from AOC website if not in cache, skips days that are already fully solved
 - `test`: Offline-only mode, uses cached data only. Useful for testing different models without network calls. Fails if data is not in cache.
 - `benchmark`: Run benchmarks across multiple models. See `benchmark.example.yaml` for config format.
+- `results`: Generate markdown report from benchmark results.
 
 ```bash
 uv run aoc-agent benchmark --config benchmark.yaml
 uv run aoc-agent benchmark --config benchmark.yaml --force  # re-run all, ignore existing
+uv run aoc-agent results  # generates results/README.md
 ```
 
 ## Logfire

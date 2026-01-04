@@ -94,7 +94,6 @@ async def _run_single(
 async def run_benchmark(
     config: BenchmarkConfig,
     results_dir: Path,
-    force: bool = False,
 ) -> None:
     console = Console()
     console.print("[bold]Starting benchmark[/bold]")
@@ -108,7 +107,7 @@ async def run_benchmark(
             existing = load_results(result_path)
 
             for day in range(1, 26):
-                if day in existing and not force:
+                if day in existing:
                     skipped += 1
                 else:
                     all_tasks.append((mc.model, year, day))

@@ -109,12 +109,11 @@ def benchmark(
     config: Annotated[Path, typer.Option(help="Path to benchmark config YAML")] = Path(
         "benchmark.yaml"
     ),
-    force: Annotated[bool, typer.Option(help="Force re-run, ignore existing results")] = False,
 ) -> None:
     _configure_logfire(console=False)
     benchmark_config = load_config(config)
     results_dir = Path("results")
-    asyncio.run(run_benchmark(benchmark_config, results_dir, force))
+    asyncio.run(run_benchmark(benchmark_config, results_dir))
 
 
 @app.command()

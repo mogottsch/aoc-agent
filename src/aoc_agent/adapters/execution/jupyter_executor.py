@@ -37,6 +37,7 @@ class JupyterExecutor:
     def __init__(self, client: AsyncKernelClient, manager: AsyncKernelManager) -> None:
         self._client = client
         self._manager = manager
+        self._lock = asyncio.Lock()
 
     async def execute(
         self,
@@ -45,15 +46,22 @@ class JupyterExecutor:
         input_content: str,
         timeout_seconds: float = 30.0,
     ) -> tuple[str, str]:
-        msg_id = self._client.execute(self._inject_input_content(input_content, code))
-        try:
-            async with asyncio.timeout(timeout_seconds):
-                return await self._collect(msg_id)
-        except TimeoutError:
-            await self._manager.interrupt_kernel()
-            with contextlib.suppress(TimeoutError):
-                await self._wait_for_idle(msg_id)
-            raise ExecutionTimeoutError(timeout_seconds) from None
+        async with self._lock:
+            msg_id = self._client.execute(self._inject_input_content(input_content, code))
+            try:
+                async with asyncio.timeout(timeout_seconds):
+                    return await self._collect(msg_id)
+            except TimeoutError:
+                await self._manager.interrupt_kernel()
+                with contextlib.suppress(TimeoutError):
+                    await self._wait_for_idle(msg_id)
+                raise ExecutionTimeoutError(timeout_seconds) from None
+
+    async def close(self) -> None:
+        async with self._lock:
+            self._client.stop_channels()
+            await self._manager.shutdown_kernel(now=True)
+            await self._manager.cleanup_resources()
 
     async def _collect(self, msg_id: str) -> tuple[str, str]:
         stdout_parts: list[str] = []

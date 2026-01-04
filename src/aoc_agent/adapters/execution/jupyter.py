@@ -21,6 +21,4 @@ async def jupyter_context(context: ToolContext) -> AsyncIterator[ToolContext]:
     try:
         yield context.model_copy(update={"executor": executor})
     finally:
-        client.stop_channels()
-        await km.shutdown_kernel(now=True)
-        await km.cleanup_resources()
+        await executor.close()

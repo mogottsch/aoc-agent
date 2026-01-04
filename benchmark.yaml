@@ -4,7 +4,7 @@ providers:
     api_key_env: OPENROUTER_API_KEY
   zai:
     base_url: https://api.z.ai/api/paas/v4
-    api_key_env: GLM_API_KEY
+    api_key_env: GLM_API_KEY_CODING
 
 models:
   - model: mistralai/devstral-2512:free
@@ -23,8 +23,13 @@ models:
   - model: nvidia/nemotron-3-nano-30b-a3b:free
     provider: openrouter
     disable_tool_choice: true
-  - model: glm-4.7
-    provider: zai
+  - model: z-ai/glm-4.7
+    provider: openrouter
+    disable_tool_choice: true
+  - model: google/gemini-3-pro-preview
+    provider: openrouter
+  # - model: glm-4.7
+  #   provider: zai
 
 years: [2023]
 

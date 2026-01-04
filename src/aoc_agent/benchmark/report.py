@@ -1,9 +1,28 @@
 from collections import defaultdict
 from pathlib import Path
 
+import httpx
 from pydantic import BaseModel
 
 from aoc_agent.benchmark.results import BenchmarkResult, load_all_results
+
+
+class ModelPricing(BaseModel):
+    prompt: float
+    completion: float
+
+
+def fetch_pricing() -> dict[str, ModelPricing]:
+    response = httpx.get("https://openrouter.ai/api/v1/models")
+    response.raise_for_status()
+    data = response.json()["data"]
+    return {
+        m["id"]: ModelPricing(
+            prompt=float(m["pricing"]["prompt"]),
+            completion=float(m["pricing"]["completion"]),
+        )
+        for m in data
+    }
 
 
 class ModelStats(BaseModel):
@@ -13,10 +32,13 @@ class ModelStats(BaseModel):
     part2_correct: int
     avg_score: float
     avg_tokens: int
+    avg_cost: float | None
     avg_duration: float
 
 
-def _compute_stats(model: str, results: list[BenchmarkResult]) -> ModelStats:
+def _compute_stats(
+    model: str, results: list[BenchmarkResult], pricing: ModelPricing | None
+) -> ModelStats:
     days_run = len(results)
     part1_correct = sum(1 for r in results if r.part1_correct is True)
     part2_correct = sum(1 for r in results if r.part2_correct is True)
@@ -26,6 +48,13 @@ def _compute_stats(model: str, results: list[BenchmarkResult]) -> ModelStats:
     avg_tokens = total_tokens // days_run if days_run > 0 else 0
     total_duration = sum(r.duration_seconds for r in results)
     avg_duration = total_duration / days_run if days_run > 0 else 0.0
+    if pricing and days_run > 0:
+        total_cost = sum(
+            r.input_tokens * pricing.prompt + r.output_tokens * pricing.completion for r in results
+        )
+        avg_cost = total_cost / days_run
+    else:
+        avg_cost = None
     return ModelStats(
         model=model,
         days_run=days_run,
@@ -33,19 +62,27 @@ def _compute_stats(model: str, results: list[BenchmarkResult]) -> ModelStats:
         part2_correct=part2_correct,
         avg_score=avg_score,
         avg_tokens=avg_tokens,
+        avg_cost=avg_cost,
         avg_duration=avg_duration,
     )
 
 
-def aggregate_by_model(results: list[BenchmarkResult]) -> list[ModelStats]:
+def aggregate_by_model(
+    results: list[BenchmarkResult], pricing: dict[str, ModelPricing]
+) -> list[ModelStats]:
     by_model: dict[str, list[BenchmarkResult]] = defaultdict(list)
     for r in results:
         by_model[r.model].append(r)
-    stats = [_compute_stats(model, model_results) for model, model_results in by_model.items()]
+    stats = [
+        _compute_stats(model, model_results, pricing.get(model))
+        for model, model_results in by_model.items()
+    ]
     return sorted(stats, key=lambda s: (-s.avg_score, s.model))
 
 
-def aggregate_by_model_year(results: list[BenchmarkResult]) -> dict[int, list[ModelStats]]:
+def aggregate_by_model_year(
+    results: list[BenchmarkResult], pricing: dict[str, ModelPricing]
+) -> dict[int, list[ModelStats]]:
     by_year_model: dict[int, dict[str, list[BenchmarkResult]]] = defaultdict(
         lambda: defaultdict(list)
     )
@@ -53,9 +90,18 @@ def aggregate_by_model_year(results: list[BenchmarkResult]) -> dict[int, list[Mo
         by_year_model[r.year][r.model].append(r)
     out: dict[int, list[ModelStats]] = {}
     for year, by_model in sorted(by_year_model.items()):
-        stats = [_compute_stats(model, model_results) for model, model_results in by_model.items()]
+        stats = [
+            _compute_stats(model, model_results, pricing.get(model))
+            for model, model_results in by_model.items()
+        ]
         out[year] = sorted(stats, key=lambda s: (-s.avg_score, s.model))
     return out
+
+
+def _format_cost(cost: float | None) -> str:
+    if cost is None:
+        return "N/A"
+    return f"${cost:.4f}"
 
 
 def _format_table_row(rank: int, s: ModelStats, include_days: bool) -> str:
@@ -71,6 +117,7 @@ def _format_table_row(rank: int, s: ModelStats, include_days: bool) -> str:
             f"{s.part2_correct}/{s.days_run}",
             f"{s.avg_score:.1f}%",
             f"{s.avg_tokens:,}",
+            _format_cost(s.avg_cost),
             f"{s.avg_duration:.1f}s",
         ]
     )
@@ -79,11 +126,19 @@ def _format_table_row(rank: int, s: ModelStats, include_days: bool) -> str:
 
 def _render_table(stats: list[ModelStats], include_days: bool) -> str:
     if include_days:
-        header = "| Rank | Model | Days | Part 1 | Part 2 | Score | Avg Tokens | Avg Duration |"
-        separator = "|------|-------|------|--------|--------|-------|------------|--------------|"
+        header = (
+            "| Rank | Model | Days | Part 1 | Part 2 | Score | "
+            "Avg Tokens | Avg Cost | Avg Duration |"
+        )
+        separator = (
+            "|------|-------|------|--------|--------|-------|"
+            "------------|----------|--------------|"
+        )
     else:
-        header = "| Rank | Model | Part 1 | Part 2 | Score | Avg Tokens | Avg Duration |"
-        separator = "|------|-------|--------|--------|-------|------------|--------------|"
+        header = "| Rank | Model | Part 1 | Part 2 | Score | Avg Tokens | Avg Cost | Avg Duration |"
+        separator = (
+            "|------|-------|--------|--------|-------|------------|----------|--------------|"
+        )
     lines = [header, separator]
     for rank, s in enumerate(stats, 1):
         lines.append(_format_table_row(rank, s, include_days))
@@ -108,6 +163,7 @@ def render_markdown(overall: list[ModelStats], by_year: dict[int, list[ModelStat
 
 def generate_report(results_dir: Path) -> str:
     results = load_all_results(results_dir)
-    overall = aggregate_by_model(results)
-    by_year = aggregate_by_model_year(results)
+    pricing = fetch_pricing()
+    overall = aggregate_by_model(results, pricing)
+    by_year = aggregate_by_model_year(results, pricing)
     return render_markdown(overall, by_year)

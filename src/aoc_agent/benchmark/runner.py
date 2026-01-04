@@ -48,11 +48,27 @@ class ModelRunConfig:
     disable_tool_choice: bool
 
 
-INFRASTRUCTURE_STATUS_CODES = {429, 500, 502, 503}
+HTTP_TOO_MANY_REQUESTS = 429
+INFRASTRUCTURE_STATUS_CODES = {500, 502, 503}
 
 
 class InfrastructureError(Exception):
     pass
+
+
+def _is_billing_error(e: ModelHTTPError) -> bool:
+    if e.status_code != HTTP_TOO_MANY_REQUESTS:
+        return False
+    error_str = str(e).lower()
+    body = getattr(e, "body", None)
+    if isinstance(body, dict):
+        code = body.get("code")
+        message = str(body.get("message", "")).lower()
+        if code == "1113" or "insufficient balance" in message or "recharge" in message:
+            return True
+    return (
+        "insufficient balance" in error_str or "recharge" in error_str or "code': '1113'" in str(e)
+    )
 
 
 def _check_answer(known: str | int | None, answer: str | None) -> bool | None:
@@ -61,7 +77,7 @@ def _check_answer(known: str | int | None, answer: str | None) -> bool | None:
     return str(known) == answer
 
 
-async def _execute_agent(
+async def _execute_agent(  # noqa: C901
     model_id: str,
     provider_config: ProviderConfig,
     tool_context: ToolContext,
@@ -85,7 +101,12 @@ async def _execute_agent(
     except UnexpectedModelBehavior as e:
         return SolutionError(error=str(e))
     except ModelHTTPError as e:
+        if _is_billing_error(e):
+            msg = f"Billing/quota error: {e}"
+            raise InfrastructureError(msg) from e
         if e.status_code in INFRASTRUCTURE_STATUS_CODES:
+            raise InfrastructureError(str(e)) from e
+        if e.status_code == HTTP_TOO_MANY_REQUESTS:
             raise InfrastructureError(str(e)) from e
         raise
     except OSError as e:

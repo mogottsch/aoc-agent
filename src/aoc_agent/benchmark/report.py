@@ -34,6 +34,7 @@ class ModelStats(BaseModel):
     avg_tokens: int
     avg_cost: float | None
     avg_duration: float
+    total_cost: float | None = None
 
 
 def _compute_stats(
@@ -54,6 +55,7 @@ def _compute_stats(
         )
         avg_cost = total_cost / days_run
     else:
+        total_cost = None
         avg_cost = None
     return ModelStats(
         model=model,
@@ -64,6 +66,7 @@ def _compute_stats(
         avg_tokens=avg_tokens,
         avg_cost=avg_cost,
         avg_duration=avg_duration,
+        total_cost=total_cost,
     )
 
 
@@ -124,6 +127,27 @@ def _format_table_row(rank: int, s: ModelStats, include_days: bool) -> str:
     return "| " + " | ".join(parts) + " |"
 
 
+def _render_cost_summary_table(stats: list[ModelStats]) -> str:
+    header = "| Model | Days | Total Cost |"
+    separator = "|-------|------|------------|"
+    lines = [header, separator]
+
+    sorted_stats = sorted(stats, key=lambda s: s.total_cost or 0, reverse=True)
+
+    for s in sorted_stats:
+        model_name = s.model
+        days = str(s.days_run)
+        total_cost = _format_cost(s.total_cost)
+        lines.append(f"| {model_name} | {days} | {total_cost} |")
+
+    total_cost_all = sum(s.total_cost for s in stats if s.total_cost is not None)
+    total_days = sum(s.days_run for s in stats)
+    lines.append("")
+    lines.append(f"| **Total** | **{total_days}** | **{_format_cost(total_cost_all)}** |")
+
+    return "\n".join(lines)
+
+
 def _render_table(stats: list[ModelStats], include_days: bool) -> str:
     if include_days:
         header = (
@@ -150,6 +174,13 @@ def render_markdown(overall: list[ModelStats], by_year: dict[int, list[ModelStat
     sections.append("Models ranked by average score across all attempted days.")
     sections.append("")
     sections.append(_render_table(overall, include_days=True))
+    sections.append("")
+    sections.append("")
+    sections.append("## Cost Summary")
+    sections.append("")
+    sections.append("Total cost per model and overall cost across all models.")
+    sections.append("")
+    sections.append(_render_cost_summary_table(overall))
     for year, stats in sorted(by_year.items()):
         sections.append("")
         sections.append("---")

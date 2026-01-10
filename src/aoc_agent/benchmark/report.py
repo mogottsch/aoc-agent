@@ -142,7 +142,6 @@ def _render_cost_summary_table(stats: list[ModelStats]) -> str:
 
     total_cost_all = sum(s.total_cost for s in stats if s.total_cost is not None)
     total_days = sum(s.days_run for s in stats)
-    lines.append("")
     lines.append(f"| **Total** | **{total_days}** | **{_format_cost(total_cost_all)}** |")
 
     return "\n".join(lines)

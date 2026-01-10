@@ -146,7 +146,7 @@ async def run_benchmark(
         async def run_task(model_id: str, year: int, day: int) -> None:
             run_config = model_configs[model_id]
             if global_semaphore is not None:
-                async with global_semaphore, run_config.semaphore:
+                async with run_config.semaphore, global_semaphore:
                     await _run_single(model_id, run_config, year, day, ctx)
             else:
                 async with run_config.semaphore:

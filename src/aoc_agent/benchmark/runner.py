@@ -126,7 +126,7 @@ async def run_benchmark(
 
     model_configs: dict[str, ModelRunConfig] = {}
     for mc in config.models:
-        parallelism = mc.parallelism if mc.parallelism is not None else config.parallelism
+        parallelism = mc.parallelism if mc.parallelism is not None else config.per_model_parallelism
         model_configs[mc.model] = ModelRunConfig(
             provider=config.providers[mc.provider],
             semaphore=asyncio.Semaphore(parallelism),
@@ -134,13 +134,23 @@ async def run_benchmark(
             openrouter_provider=mc.openrouter_provider,
         )
 
+    global_semaphore = (
+        asyncio.Semaphore(config.global_parallelism)
+        if config.global_parallelism is not None
+        else None
+    )
+
     with Live(progress.build_table(), console=console, refresh_per_second=4) as live:
         ctx = BenchmarkContext(results_dir, progress, live)
 
         async def run_task(model_id: str, year: int, day: int) -> None:
             run_config = model_configs[model_id]
-            async with run_config.semaphore:
-                await _run_single(model_id, run_config, year, day, ctx)
+            if global_semaphore is not None:
+                async with global_semaphore, run_config.semaphore:
+                    await _run_single(model_id, run_config, year, day, ctx)
+            else:
+                async with run_config.semaphore:
+                    await _run_single(model_id, run_config, year, day, ctx)
 
         await asyncio.gather(*[run_task(m, y, d) for m, y, d in all_tasks])
 

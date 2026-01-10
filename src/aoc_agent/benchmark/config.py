@@ -43,7 +43,8 @@ class BenchmarkConfig(BaseModel):
     providers: dict[str, ProviderConfig]
     models: list[ModelConfig]
     years: list[int]
-    parallelism: int = 1
+    per_model_parallelism: int = 1
+    global_parallelism: int | None = None
 
 
 def load_config(path: Path) -> BenchmarkConfig:

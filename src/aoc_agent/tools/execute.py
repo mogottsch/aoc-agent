@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 from pydantic_ai import RunContext
+from pydantic_ai.exceptions import ModelRetry
 
-from aoc_agent.adapters.execution.executor import ExecutionTimeoutError, TimeoutLimitExceededError
+from aoc_agent.adapters.execution.executor import ExecutionTimeoutError
 from aoc_agent.core.constants import (
     DEFAULT_MAX_OUTPUT_LENGTH,
     DEFAULT_TIMEOUT_SECONDS,
@@ -32,7 +33,11 @@ async def execute_python(
         raise RuntimeError("kernel not configured")
 
     if timeout_seconds > MAX_TIMEOUT_SECONDS:
-        raise TimeoutLimitExceededError(timeout_seconds, MAX_TIMEOUT_SECONDS)
+        msg = (
+            f"Requested timeout {timeout_seconds}s exceeds maximum allowed {MAX_TIMEOUT_SECONDS}s. "
+            f"Please retry with a timeout ≤ {MAX_TIMEOUT_SECONDS}s."
+        )
+        raise ModelRetry(msg)
 
     try:
         stdout, stderr = await ctx.deps.executor.execute(

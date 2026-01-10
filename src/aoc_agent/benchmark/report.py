@@ -163,7 +163,11 @@ def _render_table(stats: list[ModelStats], include_days: bool) -> str:
             "|------|-------|--------|--------|-------|------------|----------|--------------|"
         )
     lines = [header, separator]
-    for rank, s in enumerate(stats, 1):
+    rank = 1
+    for i, s in enumerate(stats):
+        # Dense ranking: same score = same rank, next rank increments by 1
+        if i > 0 and s.avg_score != stats[i - 1].avg_score:
+            rank += 1
         lines.append(_format_table_row(rank, s, include_days))
     return "\n".join(lines)
 

@@ -11,6 +11,8 @@ models:
   #   provider: openrouter
   # - model: openai/gpt-5.1-codex-max
   #   provider: openrouter
+  - model: openai/gpt-5.1-codex-mini
+    provider: openrouter
 
   - model: anthropic/claude-opus-4.5
     provider: openrouter
@@ -52,7 +54,7 @@ models:
     openrouter_provider: z-ai
     disable_tool_choice: true
 
-years: [2023]
+years: [2022, 2023]
 
-per_model_parallelism: 10
+per_model_parallelism: 3
 global_parallelism: 10

@@ -62,10 +62,11 @@ async def execute_benchmark(  # noqa: C901, PLR0913
         disable_tool_choice=disable_tool_choice,
         openrouter_provider=openrouter_provider,
     )
-    trace_id = _get_trace_id()
+    trace_id = ""
     try:
         span_name = f"benchmark {model_id} {tool_context.year}/day{tool_context.day}"
         with logfire.span(span_name, model=model_id, year=tool_context.year, day=tool_context.day):
+            trace_id = _get_trace_id()
             agent_result = await run_agent(
                 model,
                 tool_context,

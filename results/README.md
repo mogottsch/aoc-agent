@@ -10,17 +10,20 @@ Models ranked by average score across all attempted days.
 | 1 | anthropic/claude-sonnet-4.5 | 50 | 50/50 | 50/50 | 100.0% | 105,367 | $0.3528 | 60.3s |
 | 1 | google/gemini-3-flash-preview | 50 | 50/50 | 50/50 | 100.0% | 24,415 | $0.0152 | 14.8s |
 | 1 | google/gemini-3-pro-preview | 50 | 50/50 | 50/50 | 100.0% | 51,078 | $0.1682 | 88.2s |
-| 2 | z-ai/glm-4.7 | 50 | 48/50 | 47/50 | 95.0% | 145,049 | $0.0639 | 160.6s |
-| 3 | x-ai/grok-4.1-fast | 50 | 50/50 | 41/50 | 91.0% | 55,128 | $0.0161 | 211.4s |
-| 4 | openai/gpt-5.1-codex-mini | 50 | 48/50 | 42/50 | 90.0% | 195,891 | $0.0763 | 134.5s |
-| 5 | mistralai/mistral-large-2512 | 50 | 48/50 | 41/50 | 89.0% | 28,008 | $0.0154 | 31.4s |
-| 5 | xiaomi/mimo-v2-flash:free | 50 | 46/50 | 43/50 | 89.0% | 328,230 | $0.0000 | 206.1s |
-| 6 | x-ai/grok-code-fast-1 | 50 | 47/50 | 38/50 | 85.0% | 35,223 | $0.0209 | 127.8s |
-| 7 | minimax/minimax-m2.1 | 50 | 41/50 | 40/50 | 81.0% | 320,687 | $0.1001 | 184.6s |
-| 8 | mistralai/devstral-2512:free | 50 | 30/50 | 28/50 | 58.0% | 165,878 | $0.0000 | 106.6s |
-| 9 | nvidia/nemotron-3-nano-30b-a3b:free | 50 | 19/50 | 17/50 | 36.0% | 133,983 | $0.0000 | 74.7s |
-| 10 | deepseek/deepseek-v3.2 | 3 | 1/3 | 1/3 | 33.3% | 5,062 | $0.0013 | 11.0s |
-| 11 | kwaipilot/kat-coder-pro:free | 50 | 9/50 | 7/50 | 16.0% | 39,266 | $0.0000 | 170.3s |
+| 2 | openai/gpt-5.2-codex | 50 | 50/50 | 49/50 | 99.0% | 27,084 | $0.0731 | 49.8s |
+| 3 | z-ai/glm-4.7 | 50 | 48/50 | 47/50 | 95.0% | 145,049 | $0.0639 | 160.6s |
+| 4 | x-ai/grok-4.1-fast | 50 | 50/50 | 41/50 | 91.0% | 55,128 | $0.0161 | 211.4s |
+| 5 | openai/gpt-5.1-codex-mini | 50 | 48/50 | 42/50 | 90.0% | 195,891 | $0.0763 | 134.5s |
+| 6 | mistralai/mistral-large-2512 | 50 | 48/50 | 41/50 | 89.0% | 28,008 | $0.0154 | 31.4s |
+| 6 | xiaomi/mimo-v2-flash:free | 50 | 46/50 | 43/50 | 89.0% | 328,230 | $0.0000 | 206.1s |
+| 7 | x-ai/grok-code-fast-1 | 50 | 47/50 | 38/50 | 85.0% | 35,223 | $0.0209 | 127.8s |
+| 8 | minimax/minimax-m2.1 | 50 | 41/50 | 40/50 | 81.0% | 320,687 | $0.0961 | 184.6s |
+| 9 | mistralai/devstral-2512:free | 50 | 28/50 | 28/50 | 56.0% | 125,718 | $0.0000 | 127.9s |
+| 10 | nvidia/nemotron-3-nano-30b-a3b:free | 50 | 19/50 | 17/50 | 36.0% | 133,983 | $0.0000 | 74.7s |
+| 11 | deepseek/deepseek-v3.2 | 3 | 1/3 | 1/3 | 33.3% | 5,062 | $0.0013 | 11.0s |
+| 12 | moonshotai/kimi-k2-thinking | 50 | 21/50 | 12/50 | 33.0% | 46,288 | $0.0241 | 70.5s |
+| 13 | bytedance-seed/seed-1.6-flash | 50 | 13/50 | 15/50 | 28.0% | 65,874 | $0.0059 | 49.1s |
+| 14 | kwaipilot/kat-coder-pro:free | 50 | 9/50 | 7/50 | 16.0% | 39,266 | N/A | 170.3s |
 
 
 ## Cost Summary
@@ -32,19 +35,22 @@ Total cost per model and overall cost across all models.
 | anthropic/claude-sonnet-4.5 | 50 | $17.6406 |
 | anthropic/claude-opus-4.5 | 50 | $16.0527 |
 | google/gemini-3-pro-preview | 50 | $8.4111 |
-| minimax/minimax-m2.1 | 50 | $5.0035 |
+| minimax/minimax-m2.1 | 50 | $4.8041 |
 | openai/gpt-5.1-codex-mini | 50 | $3.8128 |
+| openai/gpt-5.2-codex | 50 | $3.6563 |
 | z-ai/glm-4.7 | 50 | $3.1966 |
+| moonshotai/kimi-k2-thinking | 50 | $1.2048 |
 | x-ai/grok-code-fast-1 | 50 | $1.0445 |
 | x-ai/grok-4.1-fast | 50 | $0.8057 |
 | mistralai/mistral-large-2512 | 50 | $0.7695 |
 | google/gemini-3-flash-preview | 50 | $0.7589 |
+| bytedance-seed/seed-1.6-flash | 50 | $0.2949 |
 | deepseek/deepseek-v3.2 | 3 | $0.0039 |
 | xiaomi/mimo-v2-flash:free | 50 | $0.0000 |
 | mistralai/devstral-2512:free | 50 | $0.0000 |
 | nvidia/nemotron-3-nano-30b-a3b:free | 50 | $0.0000 |
-| kwaipilot/kat-coder-pro:free | 50 | $0.0000 |
-| **Total** | **703** | **$57.4998** |
+| kwaipilot/kat-coder-pro:free | 50 | N/A |
+| **Total** | **853** | **$62.4565** |
 
 ---
 
@@ -56,16 +62,19 @@ Total cost per model and overall cost across all models.
 | 1 | anthropic/claude-sonnet-4.5 | 25/25 | 25/25 | 100.0% | 129,761 | $0.4319 | 70.1s |
 | 1 | google/gemini-3-flash-preview | 25/25 | 25/25 | 100.0% | 28,266 | $0.0175 | 16.1s |
 | 1 | google/gemini-3-pro-preview | 25/25 | 25/25 | 100.0% | 61,373 | $0.2022 | 98.1s |
-| 2 | openai/gpt-5.1-codex-mini | 25/25 | 23/25 | 96.0% | 172,413 | $0.0553 | 65.0s |
-| 3 | z-ai/glm-4.7 | 24/25 | 23/25 | 94.0% | 214,486 | $0.0935 | 218.4s |
-| 4 | x-ai/grok-4.1-fast | 25/25 | 21/25 | 92.0% | 60,148 | $0.0174 | 243.9s |
-| 5 | mistralai/mistral-large-2512 | 24/25 | 21/25 | 90.0% | 28,155 | $0.0155 | 31.4s |
-| 6 | xiaomi/mimo-v2-flash:free | 23/25 | 21/25 | 88.0% | 356,810 | $0.0000 | 254.2s |
-| 7 | x-ai/grok-code-fast-1 | 23/25 | 20/25 | 86.0% | 40,775 | $0.0235 | 173.8s |
-| 8 | minimax/minimax-m2.1 | 21/25 | 20/25 | 82.0% | 359,369 | $0.1112 | 187.9s |
-| 9 | mistralai/devstral-2512:free | 17/25 | 16/25 | 66.0% | 261,096 | $0.0000 | 158.8s |
-| 10 | nvidia/nemotron-3-nano-30b-a3b:free | 10/25 | 9/25 | 38.0% | 150,501 | $0.0000 | 69.9s |
-| 11 | kwaipilot/kat-coder-pro:free | 5/25 | 5/25 | 20.0% | 42,838 | $0.0000 | 168.9s |
+| 2 | openai/gpt-5.2-codex | 25/25 | 24/25 | 98.0% | 27,816 | $0.0857 | 64.6s |
+| 3 | openai/gpt-5.1-codex-mini | 25/25 | 23/25 | 96.0% | 172,413 | $0.0553 | 65.0s |
+| 4 | z-ai/glm-4.7 | 24/25 | 23/25 | 94.0% | 214,486 | $0.0935 | 218.4s |
+| 5 | x-ai/grok-4.1-fast | 25/25 | 21/25 | 92.0% | 60,148 | $0.0174 | 243.9s |
+| 6 | mistralai/mistral-large-2512 | 24/25 | 21/25 | 90.0% | 28,155 | $0.0155 | 31.4s |
+| 7 | xiaomi/mimo-v2-flash:free | 23/25 | 21/25 | 88.0% | 356,810 | $0.0000 | 254.2s |
+| 8 | x-ai/grok-code-fast-1 | 23/25 | 20/25 | 86.0% | 40,775 | $0.0235 | 173.8s |
+| 9 | minimax/minimax-m2.1 | 21/25 | 20/25 | 82.0% | 359,369 | $0.1068 | 187.9s |
+| 10 | mistralai/devstral-2512:free | 15/25 | 16/25 | 62.0% | 180,776 | $0.0000 | 201.3s |
+| 11 | nvidia/nemotron-3-nano-30b-a3b:free | 10/25 | 9/25 | 38.0% | 150,501 | $0.0000 | 69.9s |
+| 12 | bytedance-seed/seed-1.6-flash | 5/25 | 7/25 | 24.0% | 71,661 | $0.0063 | 52.2s |
+| 12 | moonshotai/kimi-k2-thinking | 8/25 | 4/25 | 24.0% | 40,426 | $0.0223 | 76.1s |
+| 13 | kwaipilot/kat-coder-pro:free | 5/25 | 5/25 | 20.0% | 42,838 | N/A | 168.9s |
 
 ---
 
@@ -77,14 +86,17 @@ Total cost per model and overall cost across all models.
 | 1 | anthropic/claude-sonnet-4.5 | 25/25 | 25/25 | 100.0% | 80,973 | $0.2737 | 50.6s |
 | 1 | google/gemini-3-flash-preview | 25/25 | 25/25 | 100.0% | 20,563 | $0.0128 | 13.6s |
 | 1 | google/gemini-3-pro-preview | 25/25 | 25/25 | 100.0% | 40,782 | $0.1342 | 78.4s |
+| 1 | openai/gpt-5.2-codex | 25/25 | 25/25 | 100.0% | 26,352 | $0.0605 | 34.9s |
 | 2 | z-ai/glm-4.7 | 24/25 | 24/25 | 96.0% | 75,613 | $0.0344 | 102.8s |
 | 3 | x-ai/grok-4.1-fast | 25/25 | 20/25 | 90.0% | 50,108 | $0.0149 | 179.0s |
 | 3 | xiaomi/mimo-v2-flash:free | 23/25 | 22/25 | 90.0% | 299,650 | $0.0000 | 157.9s |
 | 4 | mistralai/mistral-large-2512 | 24/25 | 20/25 | 88.0% | 27,861 | $0.0153 | 31.3s |
 | 5 | openai/gpt-5.1-codex-mini | 23/25 | 19/25 | 84.0% | 219,369 | $0.0972 | 204.0s |
 | 5 | x-ai/grok-code-fast-1 | 24/25 | 18/25 | 84.0% | 29,671 | $0.0183 | 81.8s |
-| 6 | minimax/minimax-m2.1 | 20/25 | 20/25 | 80.0% | 282,005 | $0.0889 | 181.3s |
+| 6 | minimax/minimax-m2.1 | 20/25 | 20/25 | 80.0% | 282,005 | $0.0854 | 181.3s |
 | 7 | mistralai/devstral-2512:free | 13/25 | 12/25 | 50.0% | 70,661 | $0.0000 | 54.5s |
-| 8 | nvidia/nemotron-3-nano-30b-a3b:free | 9/25 | 8/25 | 34.0% | 117,464 | $0.0000 | 79.6s |
-| 9 | deepseek/deepseek-v3.2 | 1/3 | 1/3 | 33.3% | 5,062 | $0.0013 | 11.0s |
-| 10 | kwaipilot/kat-coder-pro:free | 4/25 | 2/25 | 12.0% | 35,694 | $0.0000 | 171.7s |
+| 8 | moonshotai/kimi-k2-thinking | 13/25 | 8/25 | 42.0% | 52,149 | $0.0259 | 64.9s |
+| 9 | nvidia/nemotron-3-nano-30b-a3b:free | 9/25 | 8/25 | 34.0% | 117,464 | $0.0000 | 79.6s |
+| 10 | deepseek/deepseek-v3.2 | 1/3 | 1/3 | 33.3% | 5,062 | $0.0013 | 11.0s |
+| 11 | bytedance-seed/seed-1.6-flash | 8/25 | 8/25 | 32.0% | 60,087 | $0.0055 | 45.9s |
+| 12 | kwaipilot/kat-coder-pro:free | 4/25 | 2/25 | 12.0% | 35,694 | N/A | 171.7s |

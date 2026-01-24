@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     aoc_session_token: str = Field(alias="AOC_SESSION_TOKEN")
     model: str = Field(default="google/gemini-3-pro-preview", alias="MODEL")
     disable_tool_choice: bool = Field(default=False, alias="DISABLE_TOOL_CHOICE")
+    logfire_read_token: str | None = Field(default=None, alias="LOGFIRE_READ_TOKEN")
 
 
 @lru_cache(maxsize=1)

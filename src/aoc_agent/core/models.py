@@ -56,6 +56,4 @@ SolverResult = SolutionOutput | SolutionError
 
 class AgentRunResult(BaseModel):
     output: SolverResult
-    input_tokens: int
-    output_tokens: int
     trace_id: str

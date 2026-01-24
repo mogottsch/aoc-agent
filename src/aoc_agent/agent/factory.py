@@ -14,19 +14,26 @@ from aoc_agent.tools.sleep import sleep
 from aoc_agent.tools.submit import submit_answer
 
 
-def create_openai_model(
+def create_openai_model(  # noqa: PLR0913
     model_name: str,
     base_url: str,
     api_key: str,
     *,
     disable_tool_choice: bool = False,
     openrouter_provider: str | None = None,
+    provider_name: str | None = None,
 ) -> Model:
-    if openrouter_provider is not None:
+    is_openrouter = (
+        provider_name == "openrouter" or base_url.rstrip("/") == "https://openrouter.ai/api/v1"
+    )
+    if is_openrouter:
         provider = OpenRouterProvider(api_key=api_key)
-        settings = OpenRouterModelSettings(
-            openrouter_provider={"only": [openrouter_provider], "allow_fallbacks": False}
-        )
+        settings: OpenRouterModelSettings = {"openrouter_usage": {"include": True}}
+        if openrouter_provider is not None:
+            settings["openrouter_provider"] = {
+                "only": [openrouter_provider],
+                "allow_fallbacks": False,
+            }
         profile = None
         if disable_tool_choice:
             profile = OpenAIModelProfile(openai_supports_tool_choice_required=False)

@@ -13,6 +13,7 @@ from aoc_agent.benchmark.results import BenchmarkResult
 from aoc_agent.core.constants import DAY_25
 from aoc_agent.core.exceptions import InfrastructureError
 from aoc_agent.core.models import (
+    AgentRunResult,
     SolutionError,
     SolutionOutput,
     SolverResult,
@@ -49,18 +50,20 @@ def _extract_error(output: SolverResult) -> str | None:
 async def execute_benchmark(  # noqa: C901, PLR0913
     model_id: str,
     provider_config: ProviderConfig,
+    provider_name: str,
     tool_context: ToolContext,
     run_usage: RunUsage,
     *,
     disable_tool_choice: bool = False,
     openrouter_provider: str | None = None,
-) -> tuple[SolverResult, str]:
+) -> AgentRunResult:
     model = create_openai_model(
         model_name=model_id,
         base_url=provider_config.base_url,
         api_key=provider_config.get_api_key(),
         disable_tool_choice=disable_tool_choice,
         openrouter_provider=openrouter_provider,
+        provider_name=provider_name,
     )
     trace_id = ""
     try:
@@ -75,11 +78,20 @@ async def execute_benchmark(  # noqa: C901, PLR0913
                 run_usage=run_usage,
             )
     except SubmitLimitExceededError as e:
-        return SolutionError(error=str(e)), trace_id
+        return AgentRunResult(
+            output=SolutionError(error=str(e)),
+            trace_id=trace_id,
+        )
     except UsageLimitExceeded as e:
-        return SolutionError(error=str(e)), trace_id
+        return AgentRunResult(
+            output=SolutionError(error=str(e)),
+            trace_id=trace_id,
+        )
     except UnexpectedModelBehavior as e:
-        return SolutionError(error=str(e)), trace_id
+        return AgentRunResult(
+            output=SolutionError(error=str(e)),
+            trace_id=trace_id,
+        )
     except ModelHTTPError as e:
         if is_billing_error(e):
             msg = f"Billing/quota error: {e}"
@@ -97,7 +109,7 @@ async def execute_benchmark(  # noqa: C901, PLR0913
         msg = f"API returned invalid JSON: {e}"
         raise InfrastructureError(msg) from e
     else:
-        return agent_result.output, trace_id
+        return agent_result
 
 
 def create_benchmark_result(  # noqa: PLR0913
@@ -106,13 +118,11 @@ def create_benchmark_result(  # noqa: PLR0913
     day: int,
     known_part1: str | int | None,
     known_part2: str | int | None,
-    output: SolverResult,
+    agent_result: AgentRunResult,
     duration_seconds: float,
-    run_usage: RunUsage,
-    trace_id: str,
 ) -> BenchmarkResult:
-    part1, part2 = _extract_answers(output)
-    error = _extract_error(output)
+    part1, part2 = _extract_answers(agent_result.output)
+    error = _extract_error(agent_result.output)
 
     part2_correct: bool | None = True if day == DAY_25 else _check_answer(known_part2, part2)
 
@@ -123,10 +133,8 @@ def create_benchmark_result(  # noqa: PLR0913
         part1_correct=_check_answer(known_part1, part1),
         part2_correct=part2_correct,
         duration_seconds=duration_seconds,
-        input_tokens=run_usage.input_tokens,
-        output_tokens=run_usage.output_tokens,
         error=error,
-        trace_id=trace_id,
+        trace_id=agent_result.trace_id,
         timestamp=datetime.now(tz=UTC),
     )
 

@@ -3,7 +3,9 @@ from pathlib import Path
 
 import httpx
 from pydantic import BaseModel
+from tabulate import tabulate
 
+from aoc_agent.benchmark.logfire_usage import TraceUsage, fetch_trace_usage
 from aoc_agent.benchmark.results import BenchmarkResult, load_all_results
 
 
@@ -37,22 +39,46 @@ class ModelStats(BaseModel):
     total_cost: float | None = None
 
 
+def _usage_map(trace_usage: list[TraceUsage]) -> dict[str, TraceUsage]:
+    return {usage.trace_id: usage for usage in trace_usage}
+
+
+def _legacy_usage(result: BenchmarkResult) -> TraceUsage | None:
+    if result.input_tokens is None or result.output_tokens is None:
+        return None
+    reasoning_tokens = result.reasoning_tokens or 0
+    return TraceUsage(
+        trace_id=result.trace_id,
+        input_tokens=result.input_tokens,
+        output_tokens=result.output_tokens,
+        reasoning_tokens=reasoning_tokens,
+    )
+
+
 def _compute_stats(
-    model: str, results: list[BenchmarkResult], pricing: ModelPricing | None
+    model: str,
+    results: list[BenchmarkResult],
+    pricing: ModelPricing | None,
+    usage_by_trace: dict[str, TraceUsage],
 ) -> ModelStats:
     days_run = len(results)
     part1_correct = sum(1 for r in results if r.part1_correct is True)
     part2_correct = sum(1 for r in results if r.part2_correct is True)
     total_correct = part1_correct + part2_correct
     avg_score = (total_correct / (days_run * 2)) * 100 if days_run > 0 else 0.0
-    total_tokens = sum(r.input_tokens + r.output_tokens for r in results)
+    total_tokens = 0
+    total_cost = 0.0
+    for result in results:
+        usage = usage_by_trace[result.trace_id]
+        total_tokens += usage.input_tokens + usage.output_tokens + usage.reasoning_tokens
+        if pricing is not None:
+            total_cost += (
+                usage.input_tokens * pricing.prompt + usage.output_tokens * pricing.completion
+            )
     avg_tokens = total_tokens // days_run if days_run > 0 else 0
     total_duration = sum(r.duration_seconds for r in results)
     avg_duration = total_duration / days_run if days_run > 0 else 0.0
-    if pricing and days_run > 0:
-        total_cost = sum(
-            r.input_tokens * pricing.prompt + r.output_tokens * pricing.completion for r in results
-        )
+    if pricing is not None and days_run > 0:
         avg_cost = total_cost / days_run
     else:
         total_cost = None
@@ -71,20 +97,24 @@ def _compute_stats(
 
 
 def aggregate_by_model(
-    results: list[BenchmarkResult], pricing: dict[str, ModelPricing]
+    results: list[BenchmarkResult],
+    pricing: dict[str, ModelPricing],
+    usage_by_trace: dict[str, TraceUsage],
 ) -> list[ModelStats]:
     by_model: dict[str, list[BenchmarkResult]] = defaultdict(list)
     for r in results:
         by_model[r.model].append(r)
     stats = [
-        _compute_stats(model, model_results, pricing.get(model))
+        _compute_stats(model, model_results, pricing.get(model), usage_by_trace)
         for model, model_results in by_model.items()
     ]
     return sorted(stats, key=lambda s: (-s.avg_score, s.model))
 
 
 def aggregate_by_model_year(
-    results: list[BenchmarkResult], pricing: dict[str, ModelPricing]
+    results: list[BenchmarkResult],
+    pricing: dict[str, ModelPricing],
+    usage_by_trace: dict[str, TraceUsage],
 ) -> dict[int, list[ModelStats]]:
     by_year_model: dict[int, dict[str, list[BenchmarkResult]]] = defaultdict(
         lambda: defaultdict(list)
@@ -94,7 +124,7 @@ def aggregate_by_model_year(
     out: dict[int, list[ModelStats]] = {}
     for year, by_model in sorted(by_year_model.items()):
         stats = [
-            _compute_stats(model, model_results, pricing.get(model))
+            _compute_stats(model, model_results, pricing.get(model), usage_by_trace)
             for model, model_results in by_model.items()
         ]
         out[year] = sorted(stats, key=lambda s: (-s.avg_score, s.model))
@@ -107,69 +137,62 @@ def _format_cost(cost: float | None) -> str:
     return f"${cost:.4f}"
 
 
-def _format_table_row(rank: int, s: ModelStats, include_days: bool) -> str:
-    parts = [
-        str(rank),
-        s.model,
-    ]
-    if include_days:
-        parts.append(str(s.days_run))
-    parts.extend(
-        [
-            f"{s.part1_correct}/{s.days_run}",
-            f"{s.part2_correct}/{s.days_run}",
-            f"{s.avg_score:.1f}%",
-            f"{s.avg_tokens:,}",
-            _format_cost(s.avg_cost),
-            f"{s.avg_duration:.1f}s",
-        ]
-    )
-    return "| " + " | ".join(parts) + " |"
-
-
 def _render_cost_summary_table(stats: list[ModelStats]) -> str:
-    header = "| Model | Days | Total Cost |"
-    separator = "|-------|------|------------|"
-    lines = [header, separator]
-
     sorted_stats = sorted(stats, key=lambda s: s.total_cost or 0, reverse=True)
-
-    for s in sorted_stats:
-        model_name = s.model
-        days = str(s.days_run)
-        total_cost = _format_cost(s.total_cost)
-        lines.append(f"| {model_name} | {days} | {total_cost} |")
+    rows = [[s.model, str(s.days_run), _format_cost(s.total_cost)] for s in sorted_stats]
 
     total_cost_all = sum(s.total_cost for s in stats if s.total_cost is not None)
     total_days = sum(s.days_run for s in stats)
-    lines.append(f"| **Total** | **{total_days}** | **{_format_cost(total_cost_all)}** |")
-
-    return "\n".join(lines)
+    rows.append(["**Total**", f"**{total_days}**", f"**{_format_cost(total_cost_all)}**"])
+    return tabulate(rows, headers=["Model", "Days", "Total Cost"], tablefmt="github")
 
 
 def _render_table(stats: list[ModelStats], include_days: bool) -> str:
-    if include_days:
-        header = (
-            "| Rank | Model | Days | Part 1 | Part 2 | Score | "
-            "Avg Tokens | Avg Cost | Avg Duration |"
-        )
-        separator = (
-            "|------|-------|------|--------|--------|-------|"
-            "------------|----------|--------------|"
-        )
-    else:
-        header = "| Rank | Model | Part 1 | Part 2 | Score | Avg Tokens | Avg Cost | Avg Duration |"
-        separator = (
-            "|------|-------|--------|--------|-------|------------|----------|--------------|"
-        )
-    lines = [header, separator]
     rank = 1
+    rows: list[list[str]] = []
     for i, s in enumerate(stats):
         # Dense ranking: same score = same rank, next rank increments by 1
         if i > 0 and s.avg_score != stats[i - 1].avg_score:
             rank += 1
-        lines.append(_format_table_row(rank, s, include_days))
-    return "\n".join(lines)
+        parts = [str(rank), s.model]
+        if include_days:
+            parts.append(str(s.days_run))
+        parts.extend(
+            [
+                f"{s.part1_correct}/{s.days_run}",
+                f"{s.part2_correct}/{s.days_run}",
+                f"{s.avg_score:.1f}%",
+                f"{s.avg_tokens:,}",
+                _format_cost(s.avg_cost),
+                f"{s.avg_duration:.1f}s",
+            ]
+        )
+        rows.append(parts)
+    headers = (
+        [
+            "Rank",
+            "Model",
+            "Days",
+            "Part 1",
+            "Part 2",
+            "Score",
+            "Avg Tokens",
+            "Avg Cost",
+            "Avg Duration",
+        ]
+        if include_days
+        else [
+            "Rank",
+            "Model",
+            "Part 1",
+            "Part 2",
+            "Score",
+            "Avg Tokens",
+            "Avg Cost",
+            "Avg Duration",
+        ]
+    )
+    return tabulate(rows, headers=headers, tablefmt="github")
 
 
 def render_markdown(overall: list[ModelStats], by_year: dict[int, list[ModelStats]]) -> str:
@@ -195,9 +218,26 @@ def render_markdown(overall: list[ModelStats], by_year: dict[int, list[ModelStat
     return "\n".join(sections)
 
 
-def generate_report(results_dir: Path) -> str:
+def generate_report(results_dir: Path, *, logfire_read_token: str) -> str:
     results = load_all_results(results_dir)
+    if not results:
+        raise ValueError("No results found")
+    trace_ids = [result.trace_id for result in results]
+    if any(not trace_id for trace_id in trace_ids):
+        raise ValueError("Missing trace_id in results")
+    trace_usage = fetch_trace_usage(logfire_read_token, trace_ids)
+    usage_by_trace = _usage_map(trace_usage)
+    missing = [trace_id for trace_id in trace_ids if trace_id not in usage_by_trace]
+    if missing:
+        for result in results:
+            if result.trace_id in missing:
+                legacy = _legacy_usage(result)
+                if legacy is not None:
+                    usage_by_trace[result.trace_id] = legacy
+        still_missing = [trace_id for trace_id in trace_ids if trace_id not in usage_by_trace]
+        if still_missing:
+            raise ValueError("Logfire usage missing for some trace_ids and no legacy tokens found")
     pricing = fetch_pricing()
-    overall = aggregate_by_model(results, pricing)
-    by_year = aggregate_by_model_year(results, pricing)
+    overall = aggregate_by_model(results, pricing, usage_by_trace)
+    by_year = aggregate_by_model_year(results, pricing, usage_by_trace)
     return render_markdown(overall, by_year)

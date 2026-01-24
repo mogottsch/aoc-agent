@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class BenchmarkResult(BaseModel):
@@ -11,8 +11,10 @@ class BenchmarkResult(BaseModel):
     part1_correct: bool | None
     part2_correct: bool | None
     duration_seconds: float
-    input_tokens: int
-    output_tokens: int
+    input_tokens: int | None = Field(default=None, exclude=True)
+    output_tokens: int | None = Field(default=None, exclude=True)
+    reasoning_tokens: int | None = Field(default=None, exclude=True)
+    total_cost: float | None = Field(default=None, exclude=True)
     error: str | None
     trace_id: str
     timestamp: datetime

@@ -32,6 +32,7 @@ class BenchmarkContext:
 @dataclass
 class ModelRunConfig:
     provider: ProviderConfig
+    provider_name: str
     semaphore: asyncio.Semaphore
     disable_tool_choice: bool
     openrouter_provider: str | None
@@ -59,9 +60,10 @@ async def _run_single(
     run_usage = RunUsage()
     start = time.perf_counter()
     try:
-        output, trace_id = await execute_benchmark(
+        agent_result = await execute_benchmark(
             model_id,
             run_config.provider,
+            run_config.provider_name,
             tool_context,
             run_usage,
             disable_tool_choice=run_config.disable_tool_choice,
@@ -79,10 +81,8 @@ async def _run_single(
         day=day,
         known_part1=known.part1,
         known_part2=known.part2,
-        output=output,
+        agent_result=agent_result,
         duration_seconds=duration,
-        run_usage=run_usage,
-        trace_id=trace_id,
     )
 
     output_path = get_result_path(ctx.results_dir, model_id, year)
@@ -129,6 +129,7 @@ async def run_benchmark(
         parallelism = mc.parallelism if mc.parallelism is not None else config.per_model_parallelism
         model_configs[mc.model] = ModelRunConfig(
             provider=config.providers[mc.provider],
+            provider_name=mc.provider,
             semaphore=asyncio.Semaphore(parallelism),
             disable_tool_choice=mc.disable_tool_choice,
             openrouter_provider=mc.openrouter_provider,

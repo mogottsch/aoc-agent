@@ -42,10 +42,7 @@ async def run_agent(
         ):
             trace_id = _get_trace_id()
             result = await agent.run(prompt, deps=context_with_kernel, usage=run_usage)
-    usage = run_usage if run_usage is not None else result.usage()
     return AgentRunResult(
         output=result.output,
-        input_tokens=usage.input_tokens,
-        output_tokens=usage.output_tokens,
         trace_id=trace_id,
     )

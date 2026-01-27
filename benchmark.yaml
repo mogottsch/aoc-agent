@@ -63,6 +63,10 @@ models:
   - model: openai/gpt-5.2-codex
     provider: openrouter
 
+  - model: moonshotai/kimi-k2.5
+    provider: openrouter
+    disable_tool_choice: true
+
 years: [2022, 2023]
 
 per_model_parallelism: 3

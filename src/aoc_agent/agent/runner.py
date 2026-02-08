@@ -7,6 +7,7 @@ from aoc_agent.adapters.aoc.service import get_aoc_data_service
 from aoc_agent.adapters.execution.jupyter import jupyter_context
 from aoc_agent.agent.factory import create_agent
 from aoc_agent.agent.prompts import build_agent_prompt
+from aoc_agent.core.constants import OutputMode
 from aoc_agent.core.models import AgentRunResult
 from aoc_agent.tools.context import ToolContext
 
@@ -17,13 +18,14 @@ def _get_trace_id() -> str:
     return f"{span_context.trace_id:032x}"
 
 
-async def run_agent(
+async def run_agent(  # noqa: PLR0913
     model: Model,
     context: ToolContext,
     model_name: str,
     *,
     allow_sleep: bool = True,
     run_usage: RunUsage | None = None,
+    output_mode: OutputMode = OutputMode.TOOL,
 ) -> AgentRunResult:
     service = get_aoc_data_service(offline=context.offline)
     data = service.get(context.year, context.day)
@@ -32,7 +34,7 @@ async def run_agent(
         day=context.day,
         allow_sleep=allow_sleep,
     )
-    agent = create_agent(model, allow_sleep=allow_sleep)
+    agent = create_agent(model, allow_sleep=allow_sleep, output_mode=output_mode)
     async with jupyter_context(context) as context_with_kernel, agent:
         with logfire.span(
             "solve {year}/day{day}",

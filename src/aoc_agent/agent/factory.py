@@ -42,6 +42,18 @@ def create_openai_model(  # noqa: PLR0913
             profile = OpenAIModelProfile(openai_supports_tool_choice_required=False)
         return OpenRouterModel(model_name, provider=provider, profile=profile, settings=settings)
 
+    is_copilot = (
+        provider_name == "copilot" or base_url.rstrip("/") == "https://api.githubcopilot.com"
+    )
+    if is_copilot:
+        from aoc_agent.adapters.copilot.provider import CopilotProvider  # noqa: PLC0415
+
+        copilot_provider = CopilotProvider(api_key=api_key)
+        profile = None
+        if disable_tool_choice:
+            profile = OpenAIModelProfile(openai_supports_tool_choice_required=False)
+        return OpenAIChatModel(model_name, provider=copilot_provider, profile=profile)
+
     provider = OpenAIProvider(base_url=base_url, api_key=api_key)
     profile = None
     if disable_tool_choice:

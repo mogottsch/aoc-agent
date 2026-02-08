@@ -54,7 +54,9 @@ def _solve_day(year: int, day: int, offline: bool = False) -> None:
             api_key=settings.api_key,
             disable_tool_choice=settings.disable_tool_choice,
         )
-        agent_result = asyncio.run(run_agent(model, context, model_name=settings.model))
+        agent_result = asyncio.run(
+            run_agent(model, context, model_name=settings.model, output_mode=settings.output_mode)
+        )
 
         if isinstance(agent_result.output, SolutionOutput):
             p1, p2 = agent_result.output.part1, agent_result.output.part2

@@ -10,7 +10,7 @@ from aoc_agent.agent.factory import create_openai_model
 from aoc_agent.agent.runner import run_agent
 from aoc_agent.benchmark.config import ProviderConfig
 from aoc_agent.benchmark.results import BenchmarkResult
-from aoc_agent.core.constants import DAY_25
+from aoc_agent.core.constants import DAY_25, OutputMode
 from aoc_agent.core.exceptions import InfrastructureError
 from aoc_agent.core.models import (
     AgentRunResult,
@@ -56,6 +56,7 @@ async def execute_benchmark(  # noqa: C901, PLR0913
     *,
     disable_tool_choice: bool = False,
     openrouter_provider: str | None = None,
+    output_mode: OutputMode = OutputMode.TOOL,
 ) -> AgentRunResult:
     model = create_openai_model(
         model_name=model_id,
@@ -76,6 +77,7 @@ async def execute_benchmark(  # noqa: C901, PLR0913
                 model_name=model_id,
                 allow_sleep=False,
                 run_usage=run_usage,
+                output_mode=output_mode,
             )
     except SubmitLimitExceededError as e:
         return AgentRunResult(
@@ -120,6 +122,8 @@ def create_benchmark_result(  # noqa: PLR0913
     known_part2: str | int | None,
     agent_result: AgentRunResult,
     duration_seconds: float,
+    output_mode: OutputMode = OutputMode.TOOL,
+    disable_tool_choice: bool = False,
 ) -> BenchmarkResult:
     part1, part2 = _extract_answers(agent_result.output)
     error = _extract_error(agent_result.output)
@@ -130,6 +134,8 @@ def create_benchmark_result(  # noqa: PLR0913
         model=model_id,
         year=year,
         day=day,
+        output_mode=output_mode,
+        disable_tool_choice=disable_tool_choice,
         part1_correct=_check_answer(known_part1, part1),
         part2_correct=part2_correct,
         duration_seconds=duration_seconds,

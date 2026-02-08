@@ -4,6 +4,8 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, ValidationInfo, field_validator
 
+from aoc_agent.core.constants import OutputMode
+
 
 class ProviderConfig(BaseModel):
     base_url: str
@@ -23,6 +25,7 @@ class ModelConfig(BaseModel):
     parallelism: int | None = None
     disable_tool_choice: bool = False
     openrouter_provider: str | None = None
+    output_mode: OutputMode = OutputMode.TOOL
 
     @field_validator("openrouter_provider")
     @classmethod

@@ -1,40 +1,69 @@
 from datetime import datetime
 from pathlib import Path
+from typing import NamedTuple
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+
+from aoc_agent.core.constants import OutputMode
+
+RESULTS_FILENAME = "results.jsonl"
+
+
+class ResultKey(NamedTuple):
+    model: str
+    year: int
+    day: int
+    output_mode: OutputMode
+    disable_tool_choice: bool
 
 
 class BenchmarkResult(BaseModel):
     model: str
     year: int
     day: int
+    output_mode: OutputMode = OutputMode.TOOL
+    disable_tool_choice: bool = False
     part1_correct: bool | None
     part2_correct: bool | None
     duration_seconds: float
-    input_tokens: int | None = Field(default=None, exclude=True)
-    output_tokens: int | None = Field(default=None, exclude=True)
-    reasoning_tokens: int | None = Field(default=None, exclude=True)
-    total_cost: float | None = Field(default=None, exclude=True)
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    reasoning_tokens: int | None = None
+    total_cost: float | None = None
     error: str | None
     trace_id: str
     timestamp: datetime
 
+    @property
+    def key(self) -> ResultKey:
+        return ResultKey(
+            model=self.model,
+            year=self.year,
+            day=self.day,
+            output_mode=self.output_mode,
+            disable_tool_choice=self.disable_tool_choice,
+        )
 
-def get_result_path(base_dir: Path, model: str, year: int) -> Path:
-    safe_model = model.replace("/", "--").replace(":", "--")
-    return base_dir / f"{safe_model}--{year}.jsonl"
+
+def get_result_path(base_dir: Path) -> Path:
+    return base_dir / RESULTS_FILENAME
 
 
-def load_results(path: Path) -> dict[int, BenchmarkResult]:
+def _load_from_file(path: Path, by_key: dict[ResultKey, BenchmarkResult]) -> None:
     if not path.exists():
-        return {}
-    results: dict[int, BenchmarkResult] = {}
+        return
     for line in path.read_text().strip().split("\n"):
         if not line:
             continue
         r = BenchmarkResult.model_validate_json(line)
-        results[r.day] = r
-    return results
+        if r.key not in by_key or r.timestamp > by_key[r.key].timestamp:
+            by_key[r.key] = r
+
+
+def load_results(path: Path) -> dict[ResultKey, BenchmarkResult]:
+    by_key: dict[ResultKey, BenchmarkResult] = {}
+    _load_from_file(path, by_key)
+    return by_key
 
 
 def append_result(path: Path, result: BenchmarkResult) -> None:
@@ -44,15 +73,28 @@ def append_result(path: Path, result: BenchmarkResult) -> None:
 
 
 def load_all_results(results_dir: Path) -> list[BenchmarkResult]:
-    if not results_dir.exists():
-        return []
-    by_key: dict[tuple[str, int, int], BenchmarkResult] = {}
-    for jsonl_file in results_dir.glob("*.jsonl"):
-        for line in jsonl_file.read_text().strip().split("\n"):
-            if not line:
-                continue
-            r = BenchmarkResult.model_validate_json(line)
-            key = (r.model, r.year, r.day)
-            if key not in by_key or r.timestamp > by_key[key].timestamp:
-                by_key[key] = r
-    return list(by_key.values())
+    path = get_result_path(results_dir)
+    return list(load_results(path).values())
+
+
+def migrate_legacy_results(results_dir: Path, *, delete: bool = False) -> int:
+    result_path = get_result_path(results_dir)
+    legacy_files = [f for f in results_dir.glob("*.jsonl") if f.name != RESULTS_FILENAME]
+    if not legacy_files:
+        return 0
+
+    by_key: dict[ResultKey, BenchmarkResult] = {}
+    _load_from_file(result_path, by_key)
+    for legacy_file in legacy_files:
+        _load_from_file(legacy_file, by_key)
+
+    result_path.parent.mkdir(parents=True, exist_ok=True)
+    with result_path.open("w") as f:
+        for r in sorted(by_key.values(), key=lambda r: (r.model, r.year, r.day)):
+            f.write(r.model_dump_json() + "\n")
+
+    if delete:
+        for legacy_file in legacy_files:
+            legacy_file.unlink()
+
+    return len(legacy_files)

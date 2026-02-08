@@ -9,14 +9,21 @@ from aoc_agent.core.constants import OutputMode
 
 class ProviderConfig(BaseModel):
     base_url: str
-    api_key_env: str
+    api_key_env: str | None = None
 
     def get_api_key(self) -> str:
-        key = os.environ.get(self.api_key_env)
-        if not key:
-            msg = f"Environment variable {self.api_key_env} not set"
-            raise ValueError(msg)
-        return key
+        if self.api_key_env:
+            key = os.environ.get(self.api_key_env)
+            if not key:
+                msg = f"Environment variable {self.api_key_env} not set"
+                raise ValueError(msg)
+            return key
+        if self.base_url.rstrip("/") == "https://api.githubcopilot.com":
+            from aoc_agent.adapters.copilot.auth import get_copilot_token  # noqa: PLC0415
+
+            return get_copilot_token()
+        msg = "api_key_env is required for non-copilot providers"
+        raise ValueError(msg)
 
 
 class ModelConfig(BaseModel):
@@ -37,8 +44,10 @@ class ModelConfig(BaseModel):
     @field_validator("disable_tool_choice")
     @classmethod
     def validate_disable_tool_choice(cls, v: bool, info: ValidationInfo) -> bool:
-        if v and info.data.get("provider") != "openrouter":
-            raise ValueError("disable_tool_choice can only be set when provider is 'openrouter'")
+        allowed = {"openrouter", "copilot"}
+        if v and info.data.get("provider") not in allowed:
+            msg = f"disable_tool_choice requires provider in {allowed}"
+            raise ValueError(msg)
         return v
 
 

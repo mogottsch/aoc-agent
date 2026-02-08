@@ -52,7 +52,7 @@ def _solve_day(year: int, day: int, offline: bool = False) -> None:
         model = create_openai_model(
             model_name=settings.model,
             base_url=settings.api_base_url,
-            api_key=settings.api_key,
+            api_key=settings.resolve_api_key(),
             disable_tool_choice=settings.disable_tool_choice,
         )
         agent_result = asyncio.run(
@@ -144,6 +144,14 @@ def migrate(
         typer.echo(f"Migrated {count} legacy file(s) into results/results.jsonl")
         if not delete:
             typer.echo("Legacy files kept. Use --delete to remove them.")
+
+
+@app.command(name="copilot-login")
+def copilot_login() -> None:
+    from aoc_agent.adapters.copilot.auth import copilot_login as _copilot_login  # noqa: PLC0415
+
+    _copilot_login()
+    typer.echo("Copilot auth successful. Token cached.")
 
 
 def main() -> None:

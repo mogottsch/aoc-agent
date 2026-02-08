@@ -39,6 +39,11 @@ models:
   - model: nvidia/nemotron-3-nano-30b-a3b:free
     provider: openrouter
     disable_tool_choice: true
+  - model: nvidia/nemotron-3-nano-30b-a3b:free
+    provider: openrouter
+    disable_tool_choice: true
+    output_mode: prompted
+    parallelism: 1
 
   - model: x-ai/grok-code-fast-1
     provider: openrouter
@@ -59,6 +64,7 @@ models:
 
   - model: moonshotai/kimi-k2-thinking
     provider: openrouter
+    output_mode: prompted
 
   - model: openai/gpt-5.2-codex
     provider: openrouter

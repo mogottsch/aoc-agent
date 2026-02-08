@@ -7,6 +7,18 @@ from tabulate import tabulate
 
 from aoc_agent.benchmark.logfire_usage import TraceUsage, fetch_trace_usage
 from aoc_agent.benchmark.results import BenchmarkResult, load_all_results
+from aoc_agent.core.constants import OutputMode
+
+
+def _display_name(result: BenchmarkResult) -> str:
+    flags: list[str] = []
+    if result.output_mode != OutputMode.TOOL:
+        flags.append(result.output_mode.value)
+    if result.disable_tool_choice:
+        flags.append("no-tool-choice")
+    if flags:
+        return f"{result.model} ({', '.join(flags)})"
+    return result.model
 
 
 class ModelPricing(BaseModel):
@@ -101,12 +113,12 @@ def aggregate_by_model(
     pricing: dict[str, ModelPricing],
     usage_by_trace: dict[str, TraceUsage],
 ) -> list[ModelStats]:
-    by_model: dict[str, list[BenchmarkResult]] = defaultdict(list)
+    by_display: dict[str, list[BenchmarkResult]] = defaultdict(list)
     for r in results:
-        by_model[r.model].append(r)
+        by_display[_display_name(r)].append(r)
     stats = [
-        _compute_stats(model, model_results, pricing.get(model), usage_by_trace)
-        for model, model_results in by_model.items()
+        _compute_stats(display, model_results, pricing.get(model_results[0].model), usage_by_trace)
+        for display, model_results in by_display.items()
     ]
     return sorted(stats, key=lambda s: (-s.avg_score, s.model))
 
@@ -116,16 +128,18 @@ def aggregate_by_model_year(
     pricing: dict[str, ModelPricing],
     usage_by_trace: dict[str, TraceUsage],
 ) -> dict[int, list[ModelStats]]:
-    by_year_model: dict[int, dict[str, list[BenchmarkResult]]] = defaultdict(
+    by_year_display: dict[int, dict[str, list[BenchmarkResult]]] = defaultdict(
         lambda: defaultdict(list)
     )
     for r in results:
-        by_year_model[r.year][r.model].append(r)
+        by_year_display[r.year][_display_name(r)].append(r)
     out: dict[int, list[ModelStats]] = {}
-    for year, by_model in sorted(by_year_model.items()):
+    for year, by_display in sorted(by_year_display.items()):
         stats = [
-            _compute_stats(model, model_results, pricing.get(model), usage_by_trace)
-            for model, model_results in by_model.items()
+            _compute_stats(
+                display, model_results, pricing.get(model_results[0].model), usage_by_trace
+            )
+            for display, model_results in by_display.items()
         ]
         out[year] = sorted(stats, key=lambda s: (-s.avg_score, s.model))
     return out

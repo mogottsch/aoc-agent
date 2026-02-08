@@ -11,6 +11,7 @@ from aoc_agent.agent.factory import create_openai_model
 from aoc_agent.agent.runner import run_agent
 from aoc_agent.benchmark.config import load_config
 from aoc_agent.benchmark.report import generate_report
+from aoc_agent.benchmark.results import migrate_legacy_results
 from aoc_agent.benchmark.runner import run_benchmark
 from aoc_agent.core.constants import DAY_25
 from aoc_agent.core.models import SolutionError, SolutionOutput, SolveStatus
@@ -129,6 +130,20 @@ def results() -> None:
     markdown = generate_report(results_dir, logfire_read_token=token)
     output_path.write_text(markdown)
     typer.echo(f"Report written to {output_path}")
+
+
+@app.command()
+def migrate(
+    delete: bool = typer.Option(default=False, help="Delete legacy files after migration"),
+) -> None:
+    results_dir = Path("results")
+    count = migrate_legacy_results(results_dir, delete=delete)
+    if count == 0:
+        typer.echo("No legacy result files found")
+    else:
+        typer.echo(f"Migrated {count} legacy file(s) into results/results.jsonl")
+        if not delete:
+            typer.echo("Legacy files kept. Use --delete to remove them.")
 
 
 def main() -> None:

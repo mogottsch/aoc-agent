@@ -232,6 +232,9 @@ def render_markdown(overall: list[ModelStats], by_year: dict[int, list[ModelStat
     return "\n".join(sections)
 
 
+_NULL_TRACE_ID = "00000000000000000000000000000000"
+
+
 def generate_report(results_dir: Path, *, logfire_read_token: str) -> str:
     results = load_all_results(results_dir)
     if not results:
@@ -239,7 +242,8 @@ def generate_report(results_dir: Path, *, logfire_read_token: str) -> str:
     trace_ids = [result.trace_id for result in results]
     if any(not trace_id for trace_id in trace_ids):
         raise ValueError("Missing trace_id in results")
-    trace_usage = fetch_trace_usage(logfire_read_token, trace_ids)
+    real_trace_ids = list({tid for tid in trace_ids if tid != _NULL_TRACE_ID})
+    trace_usage = fetch_trace_usage(logfire_read_token, real_trace_ids)
     usage_by_trace = _usage_map(trace_usage)
     missing = [trace_id for trace_id in trace_ids if trace_id not in usage_by_trace]
     if missing:

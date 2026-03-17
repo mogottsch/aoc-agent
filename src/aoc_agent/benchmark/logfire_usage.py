@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import time
 from collections.abc import Iterable
 from datetime import UTC, datetime
 
@@ -48,6 +49,23 @@ def _build_sql(trace_ids: list[str]) -> str:
     )
 
 
+def _query_with_retry(
+    client: LogfireQueryClient, sql: str, min_timestamp: datetime, max_retries: int = 6
+) -> list[dict]:
+    # LogfireQueryClient raises AssertionError on non-200/400/422 responses (e.g. 429 rate limit).
+    # Retry with exponential backoff: 5s, 10s, 20s, 40s, 80s, 160s.
+    delay = 5.0
+    for attempt in range(max_retries):
+        try:
+            return client.query_json_rows(sql, min_timestamp=min_timestamp)["rows"]
+        except AssertionError:
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(delay)
+            delay *= 2
+    raise AssertionError("unreachable")
+
+
 def fetch_trace_usage(read_token: str, trace_ids: list[str]) -> list[TraceUsage]:
     if not trace_ids:
         return []
@@ -57,6 +75,6 @@ def fetch_trace_usage(read_token: str, trace_ids: list[str]) -> list[TraceUsage]
     results: list[TraceUsage] = []
     for chunk in _chunked(trace_ids, 100):
         sql = _build_sql(chunk)
-        rows = client.query_json_rows(sql, min_timestamp=min_timestamp)["rows"]
+        rows = _query_with_retry(client, sql, min_timestamp)
         results.extend(TraceUsage.model_validate(row) for row in rows)
     return results

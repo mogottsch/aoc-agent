@@ -39,6 +39,7 @@ class ModelRunConfig:
     disable_tool_choice: bool
     openrouter_provider: str | None
     output_mode: OutputMode
+    use_responses_api: bool
 
 
 async def _run_single(
@@ -72,6 +73,7 @@ async def _run_single(
             disable_tool_choice=run_config.disable_tool_choice,
             openrouter_provider=run_config.openrouter_provider,
             output_mode=run_config.output_mode,
+            use_responses_api=run_config.use_responses_api,
         )
     except InfrastructureError:
         ctx.progress.record_result(model_id, saved=False)
@@ -147,6 +149,7 @@ async def run_benchmark(
             disable_tool_choice=mc.disable_tool_choice,
             openrouter_provider=mc.openrouter_provider,
             output_mode=mc.output_mode,
+            use_responses_api=mc.use_responses_api,
         )
 
     global_semaphore = (

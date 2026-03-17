@@ -57,6 +57,7 @@ async def execute_benchmark(  # noqa: C901, PLR0913
     disable_tool_choice: bool = False,
     openrouter_provider: str | None = None,
     output_mode: OutputMode = OutputMode.TOOL,
+    use_responses_api: bool = False,
 ) -> AgentRunResult:
     model = create_openai_model(
         model_name=model_id,
@@ -65,6 +66,7 @@ async def execute_benchmark(  # noqa: C901, PLR0913
         disable_tool_choice=disable_tool_choice,
         openrouter_provider=openrouter_provider,
         provider_name=provider_name,
+        use_responses_api=use_responses_api,
     )
     trace_id = ""
     try:
@@ -101,6 +103,8 @@ async def execute_benchmark(  # noqa: C901, PLR0913
         if is_infrastructure_error(e):
             raise InfrastructureError(str(e)) from e
         if e.status_code == 429:  # noqa: PLR2004
+            raise InfrastructureError(str(e)) from e
+        if e.status_code == 400:  # noqa: PLR2004  # Copilot returns 400 for unsupported models (e.g. /responses-only models called via /chat/completions)
             raise InfrastructureError(str(e)) from e
         raise
     except OSError as e:

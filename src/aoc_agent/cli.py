@@ -123,11 +123,7 @@ def benchmark(
 def results() -> None:
     results_dir = Path("results")
     output_path = results_dir / "README.md"
-    settings = get_settings()
-    token = settings.logfire_read_token
-    if not token:
-        raise ValueError("LOGFIRE_READ_TOKEN is required")
-    markdown = generate_report(results_dir, logfire_read_token=token)
+    markdown = generate_report(results_dir)
     output_path.write_text(markdown)
     typer.echo(f"Report written to {output_path}")
 

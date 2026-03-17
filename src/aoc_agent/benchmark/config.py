@@ -33,6 +33,7 @@ class ModelConfig(BaseModel):
     disable_tool_choice: bool = False
     openrouter_provider: str | None = None
     output_mode: OutputMode = OutputMode.TOOL
+    use_responses_api: bool = False
 
     @field_validator("openrouter_provider")
     @classmethod
@@ -48,6 +49,13 @@ class ModelConfig(BaseModel):
         if v and info.data.get("provider") not in allowed:
             msg = f"disable_tool_choice requires provider in {allowed}"
             raise ValueError(msg)
+        return v
+
+    @field_validator("use_responses_api")
+    @classmethod
+    def validate_use_responses_api(cls, v: bool, info: ValidationInfo) -> bool:
+        if v and info.data.get("provider") != "copilot":
+            raise ValueError("use_responses_api is only supported for the copilot provider")
         return v
 
 

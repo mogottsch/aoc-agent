@@ -79,8 +79,22 @@ models:
   # Copilot models (run `aoc-agent copilot-login` first)
   - model: claude-opus-4.6
     provider: copilot
+  - model: claude-sonnet-4.6
+    provider: copilot
+  - model: claude-haiku-4.5
+    provider: copilot
+  - model: gemini-3.1-pro-preview
+    provider: copilot
+  - model: gpt-5.4
+    provider: copilot
+    use_responses_api: true
+  - model: gpt-5.4-mini
+    provider: copilot
+    use_responses_api: true
+  # - model: gpt-5.3-codex    # /responses-only, not supported via /chat/completions
+  #   provider: copilot
 
 years: [2022, 2023]
 
 per_model_parallelism: 3
-global_parallelism: 10
+global_parallelism: 9

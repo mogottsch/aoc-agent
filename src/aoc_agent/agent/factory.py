@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic_ai import Agent, NativeOutput, PromptedOutput, ToolOutput
 from pydantic_ai.models import Model
-from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.models.openai import OpenAIChatModel, OpenAIResponsesModel
 from pydantic_ai.models.openrouter import OpenRouterModel, OpenRouterModelSettings
 from pydantic_ai.profiles.openai import OpenAIModelProfile
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -25,6 +25,7 @@ def create_openai_model(  # noqa: PLR0913
     disable_tool_choice: bool = False,
     openrouter_provider: str | None = None,
     provider_name: str | None = None,
+    use_responses_api: bool = False,
 ) -> Model:
     is_openrouter = (
         provider_name == "openrouter" or base_url.rstrip("/") == "https://openrouter.ai/api/v1"
@@ -52,6 +53,8 @@ def create_openai_model(  # noqa: PLR0913
         profile = None
         if disable_tool_choice:
             profile = OpenAIModelProfile(openai_supports_tool_choice_required=False)
+        if use_responses_api:
+            return OpenAIResponsesModel(model_name, provider=copilot_provider, profile=profile)
         return OpenAIChatModel(model_name, provider=copilot_provider, profile=profile)
 
     provider = OpenAIProvider(base_url=base_url, api_key=api_key)

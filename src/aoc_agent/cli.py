@@ -7,6 +7,7 @@ import typer
 from rich.traceback import install as install_rich_traceback
 
 from aoc_agent.adapters.aoc.service import get_aoc_data_service
+from aoc_agent.adapters.models import list_available_models, models_as_json, resolve_provider_target
 from aoc_agent.agent.factory import create_openai_model
 from aoc_agent.agent.runner import run_agent
 from aoc_agent.benchmark.config import load_config
@@ -117,6 +118,25 @@ def benchmark(
     benchmark_config = load_config(config)
     results_dir = Path("results")
     asyncio.run(run_benchmark(benchmark_config, results_dir))
+
+
+@app.command()
+def models(
+    provider: Annotated[
+        str | None, typer.Option(help="Named provider from benchmark config")
+    ] = None,
+    config: Annotated[Path, typer.Option(help="Path to benchmark config YAML")] = Path(
+        "benchmark.yaml"
+    ),
+    json_output: Annotated[bool, typer.Option("--json", help="Print JSON output")] = False,
+) -> None:
+    target = resolve_provider_target(provider, config)
+    available_models = list_available_models(target)
+    if json_output:
+        typer.echo(models_as_json(available_models))
+        return
+    for model in available_models:
+        typer.echo(model.id)
 
 
 @app.command()

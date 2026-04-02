@@ -3,12 +3,12 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+from aoc_agent.adapters.model_types import AvailableModel, ProviderTarget
 from aoc_agent.adapters.models import (
-    AvailableModel,
-    ProviderTarget,
     list_available_models,
     resolve_provider_target,
 )
+from aoc_agent.benchmark.config import load_config
 from aoc_agent.cli import app
 
 
@@ -51,6 +51,18 @@ def test_resolve_provider_target_from_env(monkeypatch: pytest.MonkeyPatch) -> No
     assert target.provider_name == "openrouter"
 
 
+def test_resolve_google_provider_target_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("API_BASE_URL", "https://generativelanguage.googleapis.com/v1beta")
+    monkeypatch.setenv("API_KEY", "google-key")
+
+    target = resolve_provider_target(None, Path("benchmark.yaml"))
+
+    assert target.base_url == "https://generativelanguage.googleapis.com/v1beta"
+    assert target.api_key == "google-key"
+    assert target.provider_name == "google_aistudio"
+    assert target.type == "google"
+
+
 def test_resolve_provider_target_from_config(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -72,6 +84,40 @@ def test_resolve_provider_target_from_config(
     assert target.provider_name == "demo"
 
 
+def test_resolve_google_provider_target_from_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path = tmp_path / "benchmark.yaml"
+    config_path.write_text(
+        "providers:\n"
+        "  google_aistudio:\n"
+        "    base_url: https://generativelanguage.googleapis.com/v1beta\n"
+        "    api_key_env: GOOGLE_AISTUDIO_API_KEY\n"
+        "    type: google\n"
+        "models: []\n"
+        "years: [2024]\n"
+    )
+    monkeypatch.setenv("GOOGLE_AISTUDIO_API_KEY", "google-key")
+
+    target = resolve_provider_target("google_aistudio", config_path)
+
+    assert target.base_url == "https://generativelanguage.googleapis.com/v1beta"
+    assert target.api_key == "google-key"
+    assert target.provider_name == "google_aistudio"
+    assert target.type == "google"
+
+
+def test_provider_target_repr_redacts_api_key() -> None:
+    target = ProviderTarget(
+        base_url="https://generativelanguage.googleapis.com/v1beta",
+        api_key="google-key",
+        provider_name="google_aistudio",
+        type="google",
+    )
+
+    assert "google-key" not in repr(target)
+
+
 def test_list_available_models_for_openrouter_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     capture: dict[str, object] = {}
     payload = {
@@ -84,7 +130,9 @@ def test_list_available_models_for_openrouter_payload(monkeypatch: pytest.Monkey
     def fake_client(**kwargs: object) -> FakeClient:
         return FakeClient(payload=payload, capture=capture, **kwargs)
 
-    monkeypatch.setattr("aoc_agent.adapters.models.httpx.Client", fake_client)
+    monkeypatch.setattr(
+        "aoc_agent.adapters.model_providers.openai_compatible.httpx.Client", fake_client
+    )
 
     models = list_available_models(
         ProviderTarget(
@@ -107,7 +155,7 @@ def test_list_available_models_for_copilot_adds_headers(monkeypatch: pytest.Monk
     def fake_client(**kwargs: object) -> FakeClient:
         return FakeClient(payload=payload, capture=capture, **kwargs)
 
-    monkeypatch.setattr("aoc_agent.adapters.models.httpx.Client", fake_client)
+    monkeypatch.setattr("aoc_agent.adapters.model_providers.copilot.httpx.Client", fake_client)
 
     models = list_available_models(
         ProviderTarget(
@@ -126,6 +174,66 @@ def test_list_available_models_for_copilot_adds_headers(monkeypatch: pytest.Monk
             "Content-Type": "application/json",
         },
     }
+
+
+def test_list_available_models_for_google_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    capture: dict[str, object] = {}
+    payload = {
+        "models": [
+            {
+                "name": "models/gemini-2.5-pro",
+                "displayName": "Gemini 2.5 Pro",
+                "inputTokenLimit": 1048576,
+            },
+            {
+                "name": "models/gemini-2.5-flash",
+                "displayName": "Gemini 2.5 Flash",
+                "inputTokenLimit": 1048576,
+            },
+        ]
+    }
+
+    def fake_client(**kwargs: object) -> FakeClient:
+        return FakeClient(payload=payload, capture=capture, **kwargs)
+
+    monkeypatch.setattr("aoc_agent.adapters.model_providers.google.httpx.Client", fake_client)
+
+    models = list_available_models(
+        ProviderTarget(
+            base_url="https://generativelanguage.googleapis.com/v1beta",
+            api_key="token",
+            provider_name="google_aistudio",
+            type="google",
+        )
+    )
+
+    assert [model.id for model in models] == ["gemini-2.5-flash", "gemini-2.5-pro"]
+    assert capture["url"] == "https://generativelanguage.googleapis.com/v1beta/models"
+    assert capture["init_kwargs"] == {
+        "timeout": 30.0,
+        "headers": {"x-goog-api-key": "token"},
+    }
+
+
+def test_google_provider_rejects_prefixed_model_names(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_path = tmp_path / "benchmark.yaml"
+    config_path.write_text(
+        "providers:\n"
+        "  google_aistudio:\n"
+        "    base_url: https://generativelanguage.googleapis.com/v1beta\n"
+        "    api_key_env: GOOGLE_AISTUDIO_API_KEY\n"
+        "    type: google\n"
+        "models:\n"
+        "  - model: google/gemma-4-31b-it\n"
+        "    provider: google_aistudio\n"
+        "years: [2024]\n"
+    )
+    monkeypatch.setenv("GOOGLE_AISTUDIO_API_KEY", "google-key")
+
+    with pytest.raises(ValueError, match="requires bare Gemini API model IDs"):
+        load_config(config_path)
 
 
 def test_models_command_prints_json(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -4,6 +4,8 @@ from functools import lru_cache
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from aoc_agent.adapters.auth import resolve_api_key_from_value
+from aoc_agent.adapters.providers import DEFAULT_OPENAI_BASE_URL
 from aoc_agent.core.constants import OutputMode
 
 
@@ -20,13 +22,13 @@ DEFAULT_EXECUTION_TASKS_MAX = 64
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    api_base_url: str = Field(default="https://openrouter.ai/api/v1", alias="API_BASE_URL")
-    api_key: str | None = Field(default=None, alias="API_KEY")
-    aoc_session_token: str = Field(alias="AOC_SESSION_TOKEN")
+    api_base_url: str = Field(default=DEFAULT_OPENAI_BASE_URL, alias="API_BASE_URL")
+    api_key: str | None = Field(default=None, alias="API_KEY", repr=False)
+    aoc_session_token: str = Field(alias="AOC_SESSION_TOKEN", repr=False)
     model: str = Field(default="google/gemini-3-pro-preview", alias="MODEL")
     disable_tool_choice: bool = Field(default=False, alias="DISABLE_TOOL_CHOICE")
     output_mode: OutputMode = Field(default=OutputMode.TOOL, alias="OUTPUT_MODE")
-    logfire_read_token: str | None = Field(default=None, alias="LOGFIRE_READ_TOKEN")
+    logfire_read_token: str | None = Field(default=None, alias="LOGFIRE_READ_TOKEN", repr=False)
     execution_sandbox: ExecutionSandbox = Field(
         default=ExecutionSandbox.LOCAL,
         alias="EXECUTION_SANDBOX",
@@ -58,14 +60,7 @@ class Settings(BaseSettings):
         return self
 
     def resolve_api_key(self) -> str:
-        if self.api_key:
-            return self.api_key
-        if self.api_base_url.rstrip("/") == "https://api.githubcopilot.com":
-            from aoc_agent.adapters.copilot.auth import get_copilot_token  # noqa: PLC0415
-
-            return get_copilot_token()
-        msg = "API_KEY is required for non-copilot providers"
-        raise ValueError(msg)
+        return resolve_api_key_from_value(self.api_key, base_url=self.api_base_url)
 
 
 @lru_cache(maxsize=1)

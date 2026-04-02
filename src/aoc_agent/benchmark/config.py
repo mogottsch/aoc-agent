@@ -1,29 +1,20 @@
-import os
 from pathlib import Path
+from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ValidationInfo, field_validator
+from pydantic import BaseModel, ValidationInfo, field_validator, model_validator
 
+from aoc_agent.adapters.auth import resolve_api_key_from_env
 from aoc_agent.core.constants import OutputMode
 
 
 class ProviderConfig(BaseModel):
     base_url: str
     api_key_env: str | None = None
+    type: Literal["openai", "google"] = "openai"
 
     def get_api_key(self) -> str:
-        if self.api_key_env:
-            key = os.environ.get(self.api_key_env)
-            if not key:
-                msg = f"Environment variable {self.api_key_env} not set"
-                raise ValueError(msg)
-            return key
-        if self.base_url.rstrip("/") == "https://api.githubcopilot.com":
-            from aoc_agent.adapters.copilot.auth import get_copilot_token  # noqa: PLC0415
-
-            return get_copilot_token()
-        msg = "api_key_env is required for non-copilot providers"
-        raise ValueError(msg)
+        return resolve_api_key_from_env(env_var=self.api_key_env, base_url=self.base_url)
 
 
 class ModelConfig(BaseModel):
@@ -65,6 +56,21 @@ class BenchmarkConfig(BaseModel):
     years: list[int]
     per_model_parallelism: int = 1
     global_parallelism: int | None = None
+
+    @model_validator(mode="after")
+    def validate_google_model_names(self) -> "BenchmarkConfig":
+        for model in self.models:
+            provider = self.providers.get(model.provider)
+            if provider is None or provider.type != "google":
+                continue
+            if "/" not in model.model:
+                continue
+            msg = (
+                f"Google provider '{model.provider}' requires bare Gemini API model IDs, "
+                f"got '{model.model}'"
+            )
+            raise ValueError(msg)
+        return self
 
 
 def load_config(path: Path) -> BenchmarkConfig:

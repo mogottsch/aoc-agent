@@ -1,4 +1,5 @@
 import asyncio
+import os
 from pathlib import Path
 from typing import Annotated
 
@@ -17,6 +18,7 @@ from aoc_agent.benchmark.runner import run_benchmark
 from aoc_agent.core.constants import DAY_25
 from aoc_agent.core.models import SolutionError, SolutionOutput, SolveStatus
 from aoc_agent.core.settings import get_settings
+from aoc_agent.prime_cli import load_prime_environment, make_prime_client_config
 from aoc_agent.tools.context import ToolContext
 
 app = typer.Typer()
@@ -71,6 +73,12 @@ def _solve_day(year: int, day: int, offline: bool = False) -> None:
                 typer.echo(f"      Partial Part 2: {agent_result.output.partial_part2}")
     except Exception as e:  # noqa: BLE001
         typer.echo(f"   ❌ Day {day} error: {e}")
+
+
+def _ensure_prime_api_key_from_settings() -> None:
+    settings = get_settings()
+    if not os.environ.get("PRIME_API_KEY") and settings.prime_api_key:
+        os.environ["PRIME_API_KEY"] = settings.prime_api_key
 
 
 def _solve_year(year: int, offline: bool = False) -> None:
@@ -160,6 +168,60 @@ def migrate(
         typer.echo(f"Migrated {count} legacy file(s) into results/results.jsonl")
         if not delete:
             typer.echo("Legacy files kept. Use --delete to remove them.")
+
+
+@app.command()
+def prime_eval(
+    model: Annotated[str, typer.Option(help="Prime hosted model id")],
+    cache_dir: Annotated[Path, typer.Option(help="Offline AoC cache directory")] = Path("cache"),
+    results_path: Annotated[Path, typer.Option(help="Seed results JSONL path")] = Path("results/results.jsonl"),
+    output: Annotated[Path, typer.Option(help="Output JSONL path")] = Path("results/prime-eval.jsonl"),
+    num_examples: Annotated[int, typer.Option(help="Number of eval examples")] = 16,
+    rollouts_per_example: Annotated[int, typer.Option(help="Rollouts per example")] = 1,
+    max_concurrent: Annotated[int, typer.Option(help="Max concurrent rollouts")] = 4,
+    max_tokens: Annotated[int, typer.Option(help="Sampling max tokens")] = 768,
+    year: Annotated[int | None, typer.Option(help="Restrict offline dataset to a single AoC year")] = None,
+) -> None:
+    _ensure_prime_api_key_from_settings()
+    env = load_prime_environment(cache_dir=cache_dir, results_path=results_path, year=year)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    results = env.evaluate_sync(
+        client=make_prime_client_config(),
+        model=model,
+        num_examples=num_examples,
+        rollouts_per_example=rollouts_per_example,
+        max_concurrent=max_concurrent,
+        sampling_args={"max_tokens": max_tokens},
+        results_path=output,
+        save_results=True,
+    )
+    typer.echo(f"Prime eval complete: {len(results)} rollouts -> {output}")
+
+
+@app.command()
+def prime_rollout(
+    model: Annotated[str, typer.Option(help="Prime hosted model id")],
+    cache_dir: Annotated[Path, typer.Option(help="Offline AoC cache directory")] = Path("cache"),
+    results_path: Annotated[Path, typer.Option(help="Seed results JSONL path")] = Path("results/results.jsonl"),
+    output: Annotated[Path, typer.Option(help="Output JSONL path")] = Path("results/prime-rollout.jsonl"),
+    max_concurrent: Annotated[int, typer.Option(help="Max concurrent rollouts")] = 4,
+    max_tokens: Annotated[int, typer.Option(help="Sampling max tokens")] = 768,
+    year: Annotated[int | None, typer.Option(help="Restrict offline dataset to a single AoC year")] = None,
+) -> None:
+    _ensure_prime_api_key_from_settings()
+    env = load_prime_environment(cache_dir=cache_dir, results_path=results_path, year=year)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    inputs = list(env.dataset)
+    results = env.generate_sync(
+        inputs,
+        client=make_prime_client_config(),
+        model=model,
+        max_concurrent=max_concurrent,
+        sampling_args={"max_tokens": max_tokens},
+        results_path=output,
+        save_results=True,
+    )
+    typer.echo(f"Prime rollout complete: {len(results)} rollouts -> {output}")
 
 
 @app.command(name="copilot-login")

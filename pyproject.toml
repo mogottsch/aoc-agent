@@ -25,6 +25,10 @@ dev = [
 	"pytest>=8.4.0",
 	"ruff>=0.14.7",
 ]
+rl = [
+    "prime>=0.5.57",
+    "verifiers>=0.1.11",
+]
 
 [tool.ruff]
 target-version = "py313"

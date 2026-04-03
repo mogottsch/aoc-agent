@@ -24,11 +24,13 @@ class Settings(BaseSettings):
 
     api_base_url: str = Field(default=DEFAULT_OPENAI_BASE_URL, alias="API_BASE_URL")
     api_key: str | None = Field(default=None, alias="API_KEY", repr=False)
-    aoc_session_token: str = Field(alias="AOC_SESSION_TOKEN", repr=False)
+    aoc_session_token: str | None = Field(default=None, alias="AOC_SESSION_TOKEN", repr=False)
+    aoc_offline_only: bool = Field(default=False, alias="AOC_OFFLINE_ONLY")
     model: str = Field(default="google/gemini-3-pro-preview", alias="MODEL")
     disable_tool_choice: bool = Field(default=False, alias="DISABLE_TOOL_CHOICE")
     output_mode: OutputMode = Field(default=OutputMode.TOOL, alias="OUTPUT_MODE")
     logfire_read_token: str | None = Field(default=None, alias="LOGFIRE_READ_TOKEN", repr=False)
+    prime_api_key: str | None = Field(default=None, alias="PRIME_API_KEY", repr=False)
     execution_sandbox: ExecutionSandbox = Field(
         default=ExecutionSandbox.LOCAL,
         alias="EXECUTION_SANDBOX",
@@ -46,6 +48,9 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_execution_sandbox(self) -> "Settings":
+        if not self.aoc_offline_only and not self.aoc_session_token:
+            msg = "AOC_SESSION_TOKEN is required unless AOC_OFFLINE_ONLY=true"
+            raise ValueError(msg)
         if self.execution_sandbox != ExecutionSandbox.LOCAL:
             return self
         if self.execution_memory_mb != DEFAULT_EXECUTION_MEMORY_MB:

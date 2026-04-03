@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from aoc_rl.logging.events import TrajectoryEvent
+from aoc_rl.logging.events import EpisodeFinishedEvent, RewardEvent, TrajectoryEvent
 
 
 def _utc_now() -> datetime:
@@ -22,6 +22,17 @@ class EpisodeTrace(BaseModel):
     started_at: datetime = Field(default_factory=_utc_now)
     finished_at: datetime | None = None
     events: list[TrajectoryEvent] = Field(default_factory=list)
+
+    @property
+    def total_reward(self) -> float:
+        return sum(event.reward for event in self.events if isinstance(event, RewardEvent))
+
+    @property
+    def finished_event(self) -> EpisodeFinishedEvent | None:
+        for event in reversed(self.events):
+            if isinstance(event, EpisodeFinishedEvent):
+                return event
+        return None
 
 
 class JsonlTrajectoryLogger:

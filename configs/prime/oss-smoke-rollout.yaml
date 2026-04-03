@@ -1,0 +1,8 @@
+mode: rollout
+model: qwen/qwen3-8b
+year: 2022
+cache_dir: cache
+output: results/prime-rollout-qwen3-8b-auto-oss-smoke.jsonl
+max_concurrent: 1
+max_tokens: 768
+tool_choice: auto

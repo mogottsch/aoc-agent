@@ -18,7 +18,16 @@ from aoc_agent.benchmark.runner import run_benchmark
 from aoc_agent.core.constants import DAY_25
 from aoc_agent.core.models import SolutionError, SolutionOutput, SolveStatus
 from aoc_agent.core.settings import get_settings
-from aoc_agent.prime_cli import load_prime_environment, make_prime_client_config
+from aoc_agent.prime_cli import (
+    PrimeEvalConfig,
+    PrimeRolloutConfig,
+    PrimeToolChoiceMode,
+    build_prime_sampling_args,
+    load_prime_environment,
+    load_prime_eval_config,
+    load_prime_rollout_config,
+    make_prime_client_config,
+)
 from aoc_agent.tools.context import ToolContext
 
 app = typer.Typer()
@@ -55,7 +64,7 @@ def _solve_day(year: int, day: int, offline: bool = False) -> None:
         model = create_model(
             model_name=settings.model,
             base_url=settings.api_base_url,
-            api_key=settings.resolve_api_key(),
+            api_key=settings.get_api_key(),
             disable_tool_choice=settings.disable_tool_choice,
         )
         agent_result = asyncio.run(
@@ -172,62 +181,100 @@ def migrate(
 
 @app.command()
 def prime_eval(  # noqa: PLR0913
-    model: Annotated[str, typer.Option(help="Prime hosted model id")],
-    cache_dir: Annotated[Path, typer.Option(help="Offline AoC cache directory")] = Path("cache"),
-    output: Annotated[Path, typer.Option(help="Output JSONL path")] = Path(
-        "results/prime-eval.jsonl"
-    ),
-    num_examples: Annotated[int, typer.Option(help="Number of eval examples")] = 16,
-    rollouts_per_example: Annotated[int, typer.Option(help="Rollouts per example")] = 1,
-    max_concurrent: Annotated[int, typer.Option(help="Max concurrent rollouts")] = 4,
-    max_tokens: Annotated[int, typer.Option(help="Sampling max tokens")] = 768,
+    model: Annotated[str | None, typer.Option(help="Prime hosted model id")] = None,
+    config: Annotated[Path | None, typer.Option(help="Path to Prime eval config YAML")] = None,
+    cache_dir: Annotated[Path | None, typer.Option(help="Offline AoC cache directory")] = None,
+    output: Annotated[Path | None, typer.Option(help="Output JSONL path")] = None,
+    num_examples: Annotated[int | None, typer.Option(help="Number of eval examples")] = None,
+    rollouts_per_example: Annotated[int | None, typer.Option(help="Rollouts per example")] = None,
+    max_concurrent: Annotated[int | None, typer.Option(help="Max concurrent rollouts")] = None,
+    max_tokens: Annotated[int | None, typer.Option(help="Sampling max tokens")] = None,
+    tool_choice: Annotated[
+        PrimeToolChoiceMode | None,
+        typer.Option(help="Prime tool_choice mode: required or auto"),
+    ] = None,
     year: Annotated[
         int | None, typer.Option(help="Restrict offline dataset to a single AoC year")
     ] = None,
 ) -> None:
     _ensure_prime_api_key_from_settings()
-    env = load_prime_environment(cache_dir=cache_dir, year=year)
-    output.parent.mkdir(parents=True, exist_ok=True)
+    file_config = (
+        load_prime_eval_config(config) if config is not None else PrimeEvalConfig(model="")
+    )
+    resolved_model = model or file_config.model
+    if not resolved_model:
+        raise typer.BadParameter("model is required unless provided via --config")
+    resolved_cache_dir = cache_dir or file_config.cache_dir
+    resolved_output = output or file_config.output
+    resolved_num_examples = num_examples or file_config.num_examples
+    resolved_rollouts_per_example = rollouts_per_example or file_config.rollouts_per_example
+    resolved_max_concurrent = max_concurrent or file_config.max_concurrent
+    resolved_max_tokens = max_tokens or file_config.max_tokens
+    resolved_tool_choice = tool_choice or file_config.tool_choice
+    resolved_year = year if year is not None else file_config.year
+
+    env = load_prime_environment(cache_dir=resolved_cache_dir, year=resolved_year)
+    resolved_output.parent.mkdir(parents=True, exist_ok=True)
     results = env.evaluate_sync(
         client=make_prime_client_config(),
-        model=model,
-        num_examples=num_examples,
-        rollouts_per_example=rollouts_per_example,
-        max_concurrent=max_concurrent,
-        sampling_args={"max_tokens": max_tokens, "tool_choice": "required"},
-        results_path=output,
+        model=resolved_model,
+        num_examples=resolved_num_examples,
+        rollouts_per_example=resolved_rollouts_per_example,
+        max_concurrent=resolved_max_concurrent,
+        sampling_args=build_prime_sampling_args(
+            max_tokens=resolved_max_tokens, tool_choice=resolved_tool_choice
+        ),
+        results_path=resolved_output,
         save_results=True,
     )
-    typer.echo(f"Prime eval complete: {len(results)} rollouts -> {output}")
+    typer.echo(f"Prime eval complete: {len(results)} rollouts -> {resolved_output}")
 
 
 @app.command()
 def prime_rollout(  # noqa: PLR0913
-    model: Annotated[str, typer.Option(help="Prime hosted model id")],
-    cache_dir: Annotated[Path, typer.Option(help="Offline AoC cache directory")] = Path("cache"),
-    output: Annotated[Path, typer.Option(help="Output JSONL path")] = Path(
-        "results/prime-rollout.jsonl"
-    ),
-    max_concurrent: Annotated[int, typer.Option(help="Max concurrent rollouts")] = 4,
-    max_tokens: Annotated[int, typer.Option(help="Sampling max tokens")] = 768,
+    model: Annotated[str | None, typer.Option(help="Prime hosted model id")] = None,
+    config: Annotated[Path | None, typer.Option(help="Path to Prime rollout config YAML")] = None,
+    cache_dir: Annotated[Path | None, typer.Option(help="Offline AoC cache directory")] = None,
+    output: Annotated[Path | None, typer.Option(help="Output JSONL path")] = None,
+    max_concurrent: Annotated[int | None, typer.Option(help="Max concurrent rollouts")] = None,
+    max_tokens: Annotated[int | None, typer.Option(help="Sampling max tokens")] = None,
+    tool_choice: Annotated[
+        PrimeToolChoiceMode | None,
+        typer.Option(help="Prime tool_choice mode: required or auto"),
+    ] = None,
     year: Annotated[
         int | None, typer.Option(help="Restrict offline dataset to a single AoC year")
     ] = None,
 ) -> None:
     _ensure_prime_api_key_from_settings()
-    env = load_prime_environment(cache_dir=cache_dir, year=year)
-    output.parent.mkdir(parents=True, exist_ok=True)
+    file_config = (
+        load_prime_rollout_config(config) if config is not None else PrimeRolloutConfig(model="")
+    )
+    resolved_model = model or file_config.model
+    if not resolved_model:
+        raise typer.BadParameter("model is required unless provided via --config")
+    resolved_cache_dir = cache_dir or file_config.cache_dir
+    resolved_output = output or file_config.output
+    resolved_max_concurrent = max_concurrent or file_config.max_concurrent
+    resolved_max_tokens = max_tokens or file_config.max_tokens
+    resolved_tool_choice = tool_choice or file_config.tool_choice
+    resolved_year = year if year is not None else file_config.year
+
+    env = load_prime_environment(cache_dir=resolved_cache_dir, year=resolved_year)
+    resolved_output.parent.mkdir(parents=True, exist_ok=True)
     inputs = list(env.dataset)
     results = env.generate_sync(
         inputs,
         client=make_prime_client_config(),
-        model=model,
-        max_concurrent=max_concurrent,
-        sampling_args={"max_tokens": max_tokens, "tool_choice": "required"},
-        results_path=output,
+        model=resolved_model,
+        max_concurrent=resolved_max_concurrent,
+        sampling_args=build_prime_sampling_args(
+            max_tokens=resolved_max_tokens, tool_choice=resolved_tool_choice
+        ),
+        results_path=resolved_output,
         save_results=True,
     )
-    typer.echo(f"Prime rollout complete: {len(results)} rollouts -> {output}")
+    typer.echo(f"Prime rollout complete: {len(results)} rollouts -> {resolved_output}")
 
 
 @app.command(name="copilot-login")

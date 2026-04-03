@@ -1,0 +1,10 @@
+mode: eval
+model: qwen/qwen3-8b
+year: 2022
+cache_dir: cache
+output: results/prime-eval-qwen3-8b-auto-oss-smoke.jsonl
+num_examples: 2
+rollouts_per_example: 1
+max_concurrent: 1
+max_tokens: 768
+tool_choice: auto

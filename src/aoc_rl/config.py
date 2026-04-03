@@ -21,6 +21,5 @@ class RewardConfig(BaseModel):
 
 class RLConfig(BaseModel):
     manifest_path: Path = Path("configs/aoc_rl/manifest.jsonl")
-    trajectory_dir: Path = Path("artifacts/aoc_rl/trajectories")
     limits: EpisodeLimits = Field(default_factory=EpisodeLimits)
     reward: RewardConfig = Field(default_factory=RewardConfig)

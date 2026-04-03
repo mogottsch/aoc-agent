@@ -22,19 +22,16 @@ def _get_paths(cache_dir: Path, year: int, day: int) -> tuple[Path, Path, Path, 
 
 def _build_record(store: AOCDataStore, year: int, day: int) -> AocTaskRecord:
     unsolved_path, part1_path, part2_path, input_path = _get_paths(store.data_dir, year, day)
+    if not unsolved_path.exists() or not input_path.exists():
+        missing = unsolved_path if not unsolved_path.exists() else input_path
+        raise FileNotFoundError(missing)
     record = AocTaskRecord(
         year=year,
         day=day,
-        has_unsolved_html=unsolved_path.exists(),
-        has_part1_solved_html=part1_path.exists(),
-        has_part2_solved_html=part2_path.exists(),
-        has_input=input_path.exists(),
-        has_answers=part1_path.exists() or part2_path.exists(),
-        cache_dir=store.data_dir,
-        unsolved_html_path=unsolved_path if unsolved_path.exists() else None,
+        unsolved_html_path=unsolved_path,
         part1_solved_html_path=part1_path if part1_path.exists() else None,
         part2_solved_html_path=part2_path if part2_path.exists() else None,
-        input_path=input_path if input_path.exists() else None,
+        input_path=input_path,
     )
     return with_default_split(record)
 
@@ -45,9 +42,10 @@ def build_task_manifest(cache_dir: Path = Path("cache")) -> list[AocTaskRecord]:
     for year_dir in _year_dirs(cache_dir):
         year = int(year_dir.name)
         for day in range(1, 26):
-            record = _build_record(store, year, day)
-            if record.has_unsolved_html or record.has_input:
-                records.append(record)
+            unsolved_path, _, _, input_path = _get_paths(store.data_dir, year, day)
+            if not unsolved_path.exists() and not input_path.exists():
+                continue
+            records.append(_build_record(store, year, day))
     return records
 
 

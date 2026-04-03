@@ -115,7 +115,7 @@ AOC_OFFLINE_ONLY=true
 Then run a small bounded eval first:
 
 ```bash
-/usr/local/bin/mise x uv -- uv run aoc-agent prime-eval \
+uv run aoc-agent prime-eval \
   --model meta-llama/Llama-3.2-3B-Instruct \
   --year 2022 \
   --num-examples 16 \

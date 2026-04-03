@@ -1,59 +1,84 @@
-import json
 from pathlib import Path
+from typing import TypedDict
 
 from datasets import Dataset
 
+from aoc_agent.agent.prompts import build_agent_prompt
 from aoc_rl.dataset.export import build_task_manifest
+from aoc_rl.dataset.manifest import AocTaskRecord
 
 
-def _load_results(results_path: Path) -> dict[tuple[int, int], dict]:
-    if not results_path.exists():
-        return {}
-    rows: dict[tuple[int, int], dict] = {}
-    for line in results_path.read_text().splitlines():
-        if not line.strip():
-            continue
-        payload = json.loads(line)
-        key = (int(payload["year"]), int(payload["day"]))
-        rows[key] = payload
-    return rows
+class PromptMessage(TypedDict):
+    role: str
+    content: str
 
 
-def build_datasets(cache_dir: Path, results_path: Path, year: int | None = None) -> tuple[Dataset, Dataset | None]:
+class PrimeDatasetInfo(TypedDict):
+    year: int
+    day: int
+    split: str
+    input_path: str | None
+    unsolved_html_path: str | None
+
+
+class PrimeDatasetRow(TypedDict):
+    prompt: list[PromptMessage]
+    answer: str
+    task: str
+    info: PrimeDatasetInfo
+    year: int
+    day: int
+
+
+def _extract_part1_answer(record: AocTaskRecord) -> str:
+    path = record.part1_solved_html_path
+    if path is None or not path.exists():
+        return ""
+    html = path.read_text()
+    marker = "<code>"
+    if marker not in html:
+        return ""
+    return html.split(marker, 1)[1].split("</code>", 1)[0]
+
+
+def _build_row(record: AocTaskRecord) -> PrimeDatasetRow:
+    problem_html = record.unsolved_html_path.read_text()
+    return {
+        "prompt": [
+            {
+                "role": "user",
+                "content": build_agent_prompt(
+                    problem_html=problem_html,
+                    day=record.day,
+                    allow_sleep=False,
+                ),
+            }
+        ],
+        "answer": _extract_part1_answer(record),
+        "task": "aoc_rl",
+        "info": {
+            "year": record.year,
+            "day": record.day,
+            "split": str(record.split),
+            "input_path": str(record.input_path) if record.input_path else None,
+            "unsolved_html_path": str(record.unsolved_html_path)
+            if record.unsolved_html_path
+            else None,
+        },
+        "year": record.year,
+        "day": record.day,
+    }
+
+
+def build_datasets(cache_dir: Path, year: int | None = None) -> tuple[Dataset, Dataset | None]:
     manifest = build_task_manifest(cache_dir)
-    results = _load_results(results_path)
-    train_rows: list[dict] = []
-    eval_rows: list[dict] = []
+    train_rows: list[PrimeDatasetRow] = []
+    eval_rows: list[PrimeDatasetRow] = []
 
     for record in manifest:
         if year is not None and record.year != year:
             continue
-        if not record.is_runnable:
-            continue
-        answers = None
-        if record.part1_solved_html_path and record.part1_solved_html_path.exists():
-            html = record.part1_solved_html_path.read_text()
-            marker = "<code>"
-            if marker in html:
-                answers = html.split(marker, 1)[1].split("</code>", 1)[0]
-        baseline = results.get((record.year, record.day), {})
-        row = {
-            "prompt": [{"role": "user", "content": f"Solve Advent of Code {record.year} day {record.day}."}],
-            "answer": answers or "",
-            "task": "aoc_rl",
-            "info": {
-                "year": record.year,
-                "day": record.day,
-                "split": str(record.split),
-                "prompt_version": "v1",
-                "input_path": str(record.input_path) if record.input_path else None,
-                "unsolved_html_path": str(record.unsolved_html_path) if record.unsolved_html_path else None,
-            },
-            "year": record.year,
-            "day": record.day,
-            "baseline_part1_correct": bool(baseline.get("part1_correct", False)),
-            "baseline_part2_correct": bool(baseline.get("part2_correct", False)),
-        }
+        row = _build_row(record)
         train_rows.append(row)
         if str(record.split) in {"validation", "test"}:
             eval_rows.append(row)

@@ -171,19 +171,22 @@ def migrate(
 
 
 @app.command()
-def prime_eval(
+def prime_eval(  # noqa: PLR0913
     model: Annotated[str, typer.Option(help="Prime hosted model id")],
     cache_dir: Annotated[Path, typer.Option(help="Offline AoC cache directory")] = Path("cache"),
-    results_path: Annotated[Path, typer.Option(help="Seed results JSONL path")] = Path("results/results.jsonl"),
-    output: Annotated[Path, typer.Option(help="Output JSONL path")] = Path("results/prime-eval.jsonl"),
+    output: Annotated[Path, typer.Option(help="Output JSONL path")] = Path(
+        "results/prime-eval.jsonl"
+    ),
     num_examples: Annotated[int, typer.Option(help="Number of eval examples")] = 16,
     rollouts_per_example: Annotated[int, typer.Option(help="Rollouts per example")] = 1,
     max_concurrent: Annotated[int, typer.Option(help="Max concurrent rollouts")] = 4,
     max_tokens: Annotated[int, typer.Option(help="Sampling max tokens")] = 768,
-    year: Annotated[int | None, typer.Option(help="Restrict offline dataset to a single AoC year")] = None,
+    year: Annotated[
+        int | None, typer.Option(help="Restrict offline dataset to a single AoC year")
+    ] = None,
 ) -> None:
     _ensure_prime_api_key_from_settings()
-    env = load_prime_environment(cache_dir=cache_dir, results_path=results_path, year=year)
+    env = load_prime_environment(cache_dir=cache_dir, year=year)
     output.parent.mkdir(parents=True, exist_ok=True)
     results = env.evaluate_sync(
         client=make_prime_client_config(),
@@ -191,7 +194,7 @@ def prime_eval(
         num_examples=num_examples,
         rollouts_per_example=rollouts_per_example,
         max_concurrent=max_concurrent,
-        sampling_args={"max_tokens": max_tokens},
+        sampling_args={"max_tokens": max_tokens, "tool_choice": "required"},
         results_path=output,
         save_results=True,
     )
@@ -199,17 +202,20 @@ def prime_eval(
 
 
 @app.command()
-def prime_rollout(
+def prime_rollout(  # noqa: PLR0913
     model: Annotated[str, typer.Option(help="Prime hosted model id")],
     cache_dir: Annotated[Path, typer.Option(help="Offline AoC cache directory")] = Path("cache"),
-    results_path: Annotated[Path, typer.Option(help="Seed results JSONL path")] = Path("results/results.jsonl"),
-    output: Annotated[Path, typer.Option(help="Output JSONL path")] = Path("results/prime-rollout.jsonl"),
+    output: Annotated[Path, typer.Option(help="Output JSONL path")] = Path(
+        "results/prime-rollout.jsonl"
+    ),
     max_concurrent: Annotated[int, typer.Option(help="Max concurrent rollouts")] = 4,
     max_tokens: Annotated[int, typer.Option(help="Sampling max tokens")] = 768,
-    year: Annotated[int | None, typer.Option(help="Restrict offline dataset to a single AoC year")] = None,
+    year: Annotated[
+        int | None, typer.Option(help="Restrict offline dataset to a single AoC year")
+    ] = None,
 ) -> None:
     _ensure_prime_api_key_from_settings()
-    env = load_prime_environment(cache_dir=cache_dir, results_path=results_path, year=year)
+    env = load_prime_environment(cache_dir=cache_dir, year=year)
     output.parent.mkdir(parents=True, exist_ok=True)
     inputs = list(env.dataset)
     results = env.generate_sync(
@@ -217,7 +223,7 @@ def prime_rollout(
         client=make_prime_client_config(),
         model=model,
         max_concurrent=max_concurrent,
-        sampling_args={"max_tokens": max_tokens},
+        sampling_args={"max_tokens": max_tokens, "tool_choice": "required"},
         results_path=output,
         save_results=True,
     )

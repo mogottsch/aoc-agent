@@ -2,11 +2,11 @@ from pathlib import Path
 
 from verifiers.types import ClientConfig
 
-from aoc_rl.prime import load_environment
+from aoc_rl.prime.env import AocPrimeToolEnv, load_environment
 
 
-def load_prime_environment(cache_dir: Path, results_path: Path, year: int | None = None):
-    return load_environment(cache_dir=cache_dir, results_path=results_path, year=year)
+def load_prime_environment(cache_dir: Path, year: int | None = None) -> AocPrimeToolEnv:
+    return load_environment(cache_dir=cache_dir, year=year)
 
 
 def make_prime_client_config() -> ClientConfig:

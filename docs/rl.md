@@ -12,13 +12,12 @@ Right now this is best treated as an experimentation harness, not a full trainin
 The current RL path is:
 
 1. Read cached AoC tasks from `cache/`
-2. Seed metadata from baseline benchmark results in `results/results.jsonl`
-3. Build an offline dataset
-4. Run Prime-hosted evals or rollouts with tool access:
+2. Build an offline dataset
+3. Run Prime-hosted evals or rollouts with tool access:
    - `get_aoc_problem_description`
    - `execute_python`
    - `submit_answer`
-5. Save outputs under a results directory
+4. Save outputs under a results directory
 
 ## Prerequisites
 
@@ -46,16 +45,15 @@ Notes:
 You need:
 
 - `cache/` populated with Advent of Code inputs/problem HTML
-- `results/results.jsonl` present as seed baseline metadata
 
 The dataset builder scans cached years under `cache/<year>/` and can optionally be restricted with `--year`.
 
 ## Sanity check the CLI
 
 ```bash
-/usr/local/bin/mise x uv -- uv run aoc-agent --help
-/usr/local/bin/mise x uv -- uv run aoc-agent prime-eval --help
-/usr/local/bin/mise x uv -- uv run aoc-agent prime-rollout --help
+uv run aoc-agent --help
+uv run aoc-agent prime-eval --help
+uv run aoc-agent prime-rollout --help
 ```
 
 ## Recommended first run
@@ -65,7 +63,7 @@ Use one year only so the blast radius stays small.
 A good first eval shape is:
 
 ```bash
-/usr/local/bin/mise x uv -- uv run aoc-agent prime-eval \
+uv run aoc-agent prime-eval \
   --model meta-llama/Llama-3.2-3B-Instruct \
   --year 2022 \
   --num-examples 16 \
@@ -84,7 +82,7 @@ Why this shape:
 ## Run a rollout pass
 
 ```bash
-/usr/local/bin/mise x uv -- uv run aoc-agent prime-rollout \
+uv run aoc-agent prime-rollout \
   --model meta-llama/Llama-3.2-3B-Instruct \
   --year 2022 \
   --max-concurrent 1 \
@@ -134,7 +132,7 @@ Current status is a bit scuffed but usable:
 ## If you want a tiny smoke test
 
 ```bash
-/usr/local/bin/mise x uv -- uv run aoc-agent prime-eval \
+uv run aoc-agent prime-eval \
   --model meta-llama/Llama-3.2-3B-Instruct \
   --year 2022 \
   --num-examples 2 \
@@ -146,7 +144,6 @@ Current status is a bit scuffed but usable:
 
 ## Rough mental model
 
-- `results/results.jsonl` = historical baseline benchmark data
 - `cache/` = offline AoC task source
 - `prime-eval` = score hosted runs on a bounded dataset slice
 - `prime-rollout` = generate trajectories / outputs over the dataset slice

@@ -93,6 +93,39 @@ uv run logfire projects new      # or `projects use`
 
 After that, every `uv run aoc-agent ...` shows the inline summary and appears in the selected project.
 
+## RL / Prime quickstart
+
+If you want to use the new offline RL / Prime harness, see:
+
+- `docs/rl.md`
+
+Short version:
+
+```bash
+uv sync --group dev --group rl
+```
+
+Create `.env` with:
+
+```env
+PRIME_API_KEY=your_prime_key
+AOC_OFFLINE_ONLY=true
+```
+
+Then run a small bounded eval first:
+
+```bash
+/usr/local/bin/mise x uv -- uv run aoc-agent prime-eval \
+  --model meta-llama/Llama-3.2-3B-Instruct \
+  --year 2022 \
+  --num-examples 16 \
+  --rollouts-per-example 1 \
+  --max-concurrent 1 \
+  --output results/prime-eval-llama32-3b-2022
+```
+
+Prime outputs land as a directory containing `metadata.json` and `results.jsonl`.
+
 ## Development
 
 Install git hooks:

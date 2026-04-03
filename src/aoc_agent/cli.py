@@ -7,8 +7,8 @@ import typer
 from rich.traceback import install as install_rich_traceback
 
 from aoc_agent.adapters.aoc.service import get_aoc_data_service
+from aoc_agent.adapters.model_factory import create_model
 from aoc_agent.adapters.models import list_available_models, models_as_json, resolve_provider_target
-from aoc_agent.agent.factory import create_openai_model
 from aoc_agent.agent.runner import run_agent
 from aoc_agent.benchmark.config import load_config
 from aoc_agent.benchmark.report import generate_report
@@ -50,7 +50,7 @@ def _solve_day(year: int, day: int, offline: bool = False) -> None:
             solve_status=SolveStatus(),
             offline=offline,
         )
-        model = create_openai_model(
+        model = create_model(
             model_name=settings.model,
             base_url=settings.api_base_url,
             api_key=settings.resolve_api_key(),

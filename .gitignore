@@ -16,3 +16,6 @@ htmlcov/
 .ruff_cache/
 .env
 cache/
+tmp/
+results/prime-eval-smoke*/
+results/prime-rollout-smoke*/

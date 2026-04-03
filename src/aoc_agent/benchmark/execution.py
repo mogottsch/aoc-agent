@@ -6,7 +6,7 @@ from opentelemetry import trace
 from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior, UsageLimitExceeded
 from pydantic_ai.usage import RunUsage
 
-from aoc_agent.agent.factory import create_openai_model
+from aoc_agent.adapters.model_factory import create_model
 from aoc_agent.agent.runner import run_agent
 from aoc_agent.benchmark.config import ProviderConfig
 from aoc_agent.benchmark.results import BenchmarkResult
@@ -59,7 +59,7 @@ async def execute_benchmark(  # noqa: C901, PLR0913
     output_mode: OutputMode = OutputMode.TOOL,
     use_responses_api: bool = False,
 ) -> AgentRunResult:
-    model = create_openai_model(
+    model = create_model(
         model_name=model_id,
         base_url=provider_config.base_url,
         api_key=provider_config.get_api_key(),
@@ -67,6 +67,7 @@ async def execute_benchmark(  # noqa: C901, PLR0913
         openrouter_provider=openrouter_provider,
         provider_name=provider_name,
         use_responses_api=use_responses_api,
+        provider_type=provider_config.type,
     )
     trace_id = ""
     try:

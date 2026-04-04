@@ -28,6 +28,7 @@ from aoc_agent.prime_cli import (
     load_prime_rollout_config,
     make_prime_client_config,
 )
+from aoc_agent.prime_dataset import export_prime_dataset
 from aoc_agent.tools.context import ToolContext
 
 app = typer.Typer()
@@ -166,6 +167,15 @@ def results() -> None:
 
 
 @app.command()
+def export_prime_dataset_jsonl(
+    output: Annotated[Path, typer.Option(help="Output JSONL path")] = Path("data/aoc-prime.jsonl"),
+    cache_dir: Annotated[Path, typer.Option(help="Offline AoC cache directory")] = Path("cache"),
+) -> None:
+    count = export_prime_dataset(cache_dir=cache_dir, output=output)
+    typer.echo(f"Exported {count} fully solved AoC tasks to {output}")
+
+
+@app.command()
 def migrate(
     delete: bool = typer.Option(default=False, help="Delete legacy files after migration"),
 ) -> None:
@@ -183,7 +193,12 @@ def migrate(
 def prime_eval(  # noqa: PLR0913
     model: Annotated[str | None, typer.Option(help="Prime hosted model id")] = None,
     config: Annotated[Path | None, typer.Option(help="Path to Prime eval config YAML")] = None,
-    cache_dir: Annotated[Path | None, typer.Option(help="Offline AoC cache directory")] = None,
+    dataset_path: Annotated[
+        Path | None,
+        typer.Option(
+            help="Optional local JSONL dataset override; defaults to Hugging Face dataset"
+        ),
+    ] = None,
     output: Annotated[Path | None, typer.Option(help="Output JSONL path")] = None,
     num_examples: Annotated[int | None, typer.Option(help="Number of eval examples")] = None,
     rollouts_per_example: Annotated[int | None, typer.Option(help="Rollouts per example")] = None,
@@ -193,9 +208,6 @@ def prime_eval(  # noqa: PLR0913
         PrimeToolChoiceMode | None,
         typer.Option(help="Prime tool_choice mode: required or auto"),
     ] = None,
-    year: Annotated[
-        int | None, typer.Option(help="Restrict offline dataset to a single AoC year")
-    ] = None,
 ) -> None:
     _ensure_prime_api_key_from_settings()
     file_config = (
@@ -204,16 +216,15 @@ def prime_eval(  # noqa: PLR0913
     resolved_model = model or file_config.model
     if not resolved_model:
         raise typer.BadParameter("model is required unless provided via --config")
-    resolved_cache_dir = cache_dir or file_config.cache_dir
+    resolved_dataset_path = dataset_path or file_config.dataset_path
     resolved_output = output or file_config.output
     resolved_num_examples = num_examples or file_config.num_examples
     resolved_rollouts_per_example = rollouts_per_example or file_config.rollouts_per_example
     resolved_max_concurrent = max_concurrent or file_config.max_concurrent
     resolved_max_tokens = max_tokens or file_config.max_tokens
     resolved_tool_choice = tool_choice or file_config.tool_choice
-    resolved_year = year if year is not None else file_config.year
 
-    env = load_prime_environment(cache_dir=resolved_cache_dir, year=resolved_year)
+    env = load_prime_environment(dataset_path=resolved_dataset_path)
     resolved_output.parent.mkdir(parents=True, exist_ok=True)
     results = env.evaluate_sync(
         client=make_prime_client_config(),
@@ -234,16 +245,19 @@ def prime_eval(  # noqa: PLR0913
 def prime_rollout(  # noqa: PLR0913
     model: Annotated[str | None, typer.Option(help="Prime hosted model id")] = None,
     config: Annotated[Path | None, typer.Option(help="Path to Prime rollout config YAML")] = None,
-    cache_dir: Annotated[Path | None, typer.Option(help="Offline AoC cache directory")] = None,
+    dataset_path: Annotated[
+        Path | None,
+        typer.Option(
+            help="Optional local JSONL dataset override; defaults to Hugging Face dataset"
+        ),
+    ] = None,
     output: Annotated[Path | None, typer.Option(help="Output JSONL path")] = None,
+    num_examples: Annotated[int | None, typer.Option(help="Limit rollout inputs")] = None,
     max_concurrent: Annotated[int | None, typer.Option(help="Max concurrent rollouts")] = None,
     max_tokens: Annotated[int | None, typer.Option(help="Sampling max tokens")] = None,
     tool_choice: Annotated[
         PrimeToolChoiceMode | None,
         typer.Option(help="Prime tool_choice mode: required or auto"),
-    ] = None,
-    year: Annotated[
-        int | None, typer.Option(help="Restrict offline dataset to a single AoC year")
     ] = None,
 ) -> None:
     _ensure_prime_api_key_from_settings()
@@ -253,16 +267,18 @@ def prime_rollout(  # noqa: PLR0913
     resolved_model = model or file_config.model
     if not resolved_model:
         raise typer.BadParameter("model is required unless provided via --config")
-    resolved_cache_dir = cache_dir or file_config.cache_dir
+    resolved_dataset_path = dataset_path or file_config.dataset_path
     resolved_output = output or file_config.output
+    resolved_num_examples = num_examples if num_examples is not None else file_config.num_examples
     resolved_max_concurrent = max_concurrent or file_config.max_concurrent
     resolved_max_tokens = max_tokens or file_config.max_tokens
     resolved_tool_choice = tool_choice or file_config.tool_choice
-    resolved_year = year if year is not None else file_config.year
 
-    env = load_prime_environment(cache_dir=resolved_cache_dir, year=resolved_year)
+    env = load_prime_environment(dataset_path=resolved_dataset_path)
     resolved_output.parent.mkdir(parents=True, exist_ok=True)
     inputs = list(env.dataset)
+    if resolved_num_examples is not None:
+        inputs = inputs[:resolved_num_examples]
     results = env.generate_sync(
         inputs,
         client=make_prime_client_config(),

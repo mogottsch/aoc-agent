@@ -1,4 +1,13 @@
-from aoc_rl.config import RewardConfig
+from pydantic import BaseModel
+
+
+class RewardConfig(BaseModel):
+    part1_correct: float = 1.0
+    part2_correct: float = 1.0
+    tool_call_penalty: float = -0.02
+    python_timeout_penalty: float = -0.05
+    invalid_submission_penalty: float = -0.1
+    free_tool_calls: int = 4
 
 
 def tool_penalty(tool_calls: int, config: RewardConfig) -> float:

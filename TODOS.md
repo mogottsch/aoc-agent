@@ -1,1 +1,0 @@
-- replace jupyter executor with docker environment (need resource limits on ram)

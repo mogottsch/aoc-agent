@@ -4,9 +4,9 @@ from typing import Literal, TypedDict
 
 import yaml
 from pydantic import BaseModel
+from verifiers import Environment
 from verifiers.types import ClientConfig
-
-from aoc_rl.prime.env import AocPrimeToolEnv, load_environment
+from verifiers.utils.env_utils import load_environment
 
 
 class PrimeCommandMode(StrEnum):
@@ -26,8 +26,7 @@ class PrimeSamplingArgs(TypedDict, total=False):
 
 class PrimeBaseConfig(BaseModel):
     model: str
-    cache_dir: Path = Path("cache")
-    year: int | None = None
+    dataset_path: Path | None = None
     max_concurrent: int = 4
     max_tokens: int = 768
     tool_choice: PrimeToolChoiceMode = PrimeToolChoiceMode.REQUIRED
@@ -43,6 +42,7 @@ class PrimeEvalConfig(PrimeBaseConfig):
 class PrimeRolloutConfig(PrimeBaseConfig):
     mode: Literal[PrimeCommandMode.ROLLOUT] = PrimeCommandMode.ROLLOUT
     output: Path = Path("results/prime-rollout.jsonl")
+    num_examples: int | None = None
 
 
 type PrimeConfig = PrimeEvalConfig | PrimeRolloutConfig
@@ -79,8 +79,10 @@ def load_prime_rollout_config(path: Path) -> PrimeRolloutConfig:
     return config
 
 
-def load_prime_environment(cache_dir: Path, year: int | None = None) -> AocPrimeToolEnv:
-    return load_environment(cache_dir=cache_dir, year=year)
+def load_prime_environment(dataset_path: Path | None = None) -> Environment:
+    if dataset_path is None:
+        return load_environment("aoc-prime-env")
+    return load_environment("aoc-prime-env", dataset_path=str(dataset_path))
 
 
 def make_prime_client_config() -> ClientConfig:

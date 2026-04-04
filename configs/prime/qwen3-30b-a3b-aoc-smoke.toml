@@ -1,0 +1,20 @@
+model = "Qwen/Qwen3-30B-A3B-Instruct-2507"
+max_steps = 50
+batch_size = 8
+rollouts_per_example = 2
+
+[sampling]
+max_tokens = 1024
+
+[[env]]
+id = "mgottsch/aoc-prime-env@0.1.0"
+args = { split = "train", max_examples = 2 }
+
+[eval]
+interval = 25
+num_examples = 2
+rollouts_per_example = 1
+
+[[eval.env]]
+id = "mgottsch/aoc-prime-env@0.1.0"
+args = { split = "validation", max_examples = 2 }

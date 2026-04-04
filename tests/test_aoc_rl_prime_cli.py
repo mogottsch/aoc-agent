@@ -22,8 +22,7 @@ def test_load_prime_eval_config_from_yaml(tmp_path: Path) -> None:
     config_path.write_text(
         """mode: eval
 model: qwen/qwen3-8b
-year: 2022
-cache_dir: cache/rl
+dataset_path: data/aoc-prime.jsonl
 output: results/prime-eval-qwen3-8b-auto.jsonl
 num_examples: 2
 rollouts_per_example: 1
@@ -38,8 +37,7 @@ tool_choice: auto
     assert isinstance(config, PrimeEvalConfig)
     assert config.mode == "eval"
     assert config.model == "qwen/qwen3-8b"
-    assert config.year == 2022
-    assert config.cache_dir == Path("cache/rl")
+    assert config.dataset_path == Path("data/aoc-prime.jsonl")
     assert config.output == Path("results/prime-eval-qwen3-8b-auto.jsonl")
     assert config.num_examples == 2
     assert config.rollouts_per_example == 1
@@ -53,8 +51,7 @@ def test_load_prime_rollout_config_from_yaml(tmp_path: Path) -> None:
     config_path.write_text(
         """mode: rollout
 model: qwen/qwen3-8b
-year: 2022
-cache_dir: cache/rl
+dataset_path: data/aoc-prime.jsonl
 output: results/prime-rollout-qwen3-8b-auto.jsonl
 max_concurrent: 1
 max_tokens: 768
@@ -67,9 +64,9 @@ tool_choice: auto
     assert isinstance(config, PrimeRolloutConfig)
     assert config.mode == "rollout"
     assert config.model == "qwen/qwen3-8b"
-    assert config.year == 2022
-    assert config.cache_dir == Path("cache/rl")
+    assert config.dataset_path == Path("data/aoc-prime.jsonl")
     assert config.output == Path("results/prime-rollout-qwen3-8b-auto.jsonl")
+    assert config.num_examples is None
     assert config.max_concurrent == 1
     assert config.max_tokens == 768
     assert config.tool_choice is PrimeToolChoiceMode.AUTO
@@ -93,9 +90,8 @@ def test_prime_eval_command_uses_offline_dataset_and_writes_results(
             Path(kwargs["results_path"]).write_text('{"ok": true}\n')
             return [{"reward": 1.0}]
 
-    def fake_load_prime_environment(cache_dir: Path, year: int | None = None) -> FakeEnv:
-        _ = cache_dir
-        captured["year"] = year
+    def fake_load_prime_environment(dataset_path: Path | None = None) -> FakeEnv:
+        captured["dataset_path"] = dataset_path
         return FakeEnv()
 
     monkeypatch.setattr(
@@ -114,12 +110,10 @@ def test_prime_eval_command_uses_offline_dataset_and_writes_results(
             "prime-eval",
             "--model",
             "Qwen/Qwen3-4B-Instruct-2507",
-            "--cache-dir",
-            str(tmp_path / "cache"),
+            "--dataset-path",
+            str(tmp_path / "data.jsonl"),
             "--output",
             str(tmp_path / "eval.jsonl"),
-            "--year",
-            "2022",
             "--num-examples",
             "5",
             "--rollouts-per-example",
@@ -134,7 +128,7 @@ def test_prime_eval_command_uses_offline_dataset_and_writes_results(
     assert result.exit_code == 0
     assert "Prime eval complete" in result.stdout
     assert captured["model"] == "Qwen/Qwen3-4B-Instruct-2507"
-    assert captured["year"] == 2022
+    assert captured["dataset_path"] == tmp_path / "data.jsonl"
     assert captured["num_examples"] == 5
     assert captured["rollouts_per_example"] == 2
     assert captured["max_concurrent"] == 3
@@ -157,7 +151,7 @@ def test_prime_eval_command_allows_auto_tool_choice(
 
     monkeypatch.setattr(
         "aoc_agent.cli.load_prime_environment",
-        lambda cache_dir, year=None: FakeEnv(),
+        lambda dataset_path=None: FakeEnv(),
     )
     monkeypatch.setattr(
         "aoc_agent.cli.get_settings",
@@ -189,8 +183,7 @@ def test_prime_eval_command_can_load_yaml_config(
     config_path.write_text(
         f"""mode: eval
 model: qwen/qwen3-8b
-year: 2022
-cache_dir: {tmp_path / "cache"}
+dataset_path: {tmp_path / "data.jsonl"}
 output: {tmp_path / "eval.jsonl"}
 num_examples: 2
 rollouts_per_example: 1
@@ -213,7 +206,7 @@ tool_choice: auto
 
     monkeypatch.setattr(
         "aoc_agent.cli.load_prime_environment",
-        lambda cache_dir, year=None: FakeEnv(),
+        lambda dataset_path=None: FakeEnv(),
     )
     monkeypatch.setattr(
         "aoc_agent.cli.get_settings",
@@ -254,9 +247,8 @@ def test_prime_rollout_command_uses_generate_sync(
             Path(kwargs["results_path"]).write_text('{"ok": true}\n')
             return [{"reward": 1.0}]
 
-    def fake_load_prime_environment(cache_dir: Path, year: int | None = None) -> FakeEnv:
-        _ = cache_dir
-        captured["year"] = year
+    def fake_load_prime_environment(dataset_path: Path | None = None) -> FakeEnv:
+        captured["dataset_path"] = dataset_path
         return FakeEnv()
 
     monkeypatch.setattr(
@@ -276,8 +268,8 @@ def test_prime_rollout_command_uses_generate_sync(
             "Qwen/Qwen3.5-4B",
             "--output",
             str(tmp_path / "rollout.jsonl"),
-            "--year",
-            "2022",
+            "--num-examples",
+            "1",
             "--max-concurrent",
             "4",
             "--max-tokens",
@@ -288,7 +280,7 @@ def test_prime_rollout_command_uses_generate_sync(
     assert result.exit_code == 0
     assert "Prime rollout complete" in result.stdout
     assert captured["model"] == "Qwen/Qwen3.5-4B"
-    assert captured["year"] == 2022
+    assert captured["dataset_path"] is None
     assert captured["max_concurrent"] == 4
     assert captured["sampling_args"] == {"max_tokens": 384, "tool_choice": "required"}
     assert captured["save_results"] is True
@@ -316,7 +308,7 @@ def test_prime_rollout_command_allows_auto_tool_choice(
 
     monkeypatch.setattr(
         "aoc_agent.cli.load_prime_environment",
-        lambda cache_dir, year=None: FakeEnv(),
+        lambda dataset_path=None: FakeEnv(),
     )
     monkeypatch.setattr(
         "aoc_agent.cli.get_settings",
@@ -349,9 +341,9 @@ def test_prime_rollout_command_can_load_yaml_config(
     config_path.write_text(
         f"""mode: rollout
 model: qwen/qwen3-8b
-year: 2022
-cache_dir: {tmp_path / "cache"}
+dataset_path: {tmp_path / "data.jsonl"}
 output: {tmp_path / "rollout.jsonl"}
+num_examples: 1
 max_concurrent: 1
 max_tokens: 768
 tool_choice: auto
@@ -376,7 +368,7 @@ tool_choice: auto
 
     monkeypatch.setattr(
         "aoc_agent.cli.load_prime_environment",
-        lambda cache_dir, year=None: FakeEnv(),
+        lambda dataset_path=None: FakeEnv(),
     )
     monkeypatch.setattr(
         "aoc_agent.cli.get_settings",

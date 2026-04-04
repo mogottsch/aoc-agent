@@ -17,5 +17,14 @@ htmlcov/
 .env
 cache/
 tmp/
+data/
+.prime/
+environments/*/.prime/
+environments/*/outputs/
+environments/*/dist/
 results/prime-eval-smoke*/
 results/prime-rollout-smoke*/
+results/prime-eval-smoke-*/
+results/prime-rollout-smoke-*/
+results/prime-eval-*/
+results/prime-rollout-*/

@@ -1,0 +1,27 @@
+name = "qwen3-5-4b-aoc-v1"
+model = "Qwen/Qwen3.5-4B"
+max_steps = 100
+batch_size = 128
+rollouts_per_example = 8
+
+[sampling]
+max_tokens = 2048
+
+[[env]]
+id = "mgottsch/aoc-prime-env@0.1.1"
+args = { split = "train", max_turns = 32 }
+
+[eval]
+interval = 25
+num_examples = -1
+rollouts_per_example = 1
+eval_base_model = true
+
+[[eval.env]]
+id = "mgottsch/aoc-prime-env@0.1.1"
+args = { split = "validation", max_turns = 32 }
+
+[val]
+interval = 10
+num_examples = 25
+rollouts_per_example = 1

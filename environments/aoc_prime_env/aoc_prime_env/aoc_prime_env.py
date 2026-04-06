@@ -191,7 +191,7 @@ class AocPrimeEnv(PythonEnv):
 
     @vf.cleanup
     async def finalize_state(self, state: State) -> None:
-        solve_status = state["solve_status"]
+        solve_status = state.get("solve_status") or SolveStatus()
         result = EpisodeResult(
             year=int(state["info"]["year"]),
             day=int(state["info"]["day"]),

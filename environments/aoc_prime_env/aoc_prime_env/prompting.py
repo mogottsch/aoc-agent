@@ -15,10 +15,7 @@ def build_agent_instructions(*, day: int, allow_sleep: bool) -> list[str]:
         "- Store large data in variables rather than printing everything.",
         "- The `execute_python` output is truncated to 2000 characters by default.",
         "- You can increase `max_output_length` if you need to see more.",
-        (
-            "- Each `execute_python` call has a wall-clock timeout via `timeout_seconds` "
-            "(default 30s)."
-        ),
+        "- Each `execute_python` call has a wall-clock timeout of 30 seconds.",
         (
             "- The examples in the problem description are for understanding only, not the "
             "actual input."

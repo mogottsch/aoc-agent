@@ -18,7 +18,7 @@ from .models import SolveStatus
 from .parser import SubmitStatus, extract_answer_from_html
 from .rewards import RewardConfig, submission_reward, timeout_penalty, tool_penalty
 
-MAX_TIMEOUT_SECONDS = 30.0
+DEFAULT_COMMAND_TIMEOUT_SECONDS = 30
 
 
 class ExecuteResult(BaseModel):
@@ -49,6 +49,7 @@ class AocPrimeEnv(PythonEnv):
         dataset: Dataset,
         eval_dataset: Dataset | None = None,
         max_turns: int = 8,
+        command_timeout_seconds: int = DEFAULT_COMMAND_TIMEOUT_SECONDS,
         reward_config: RewardConfig | None = None,
     ) -> None:
         self.reward_config = reward_config or RewardConfig()
@@ -60,6 +61,7 @@ class AocPrimeEnv(PythonEnv):
                 funcs=[self.total_reward, self.solved_part1_metric, self.solved_part2_metric]
             ),
             max_turns=max_turns,
+            timeout_per_command_seconds=command_timeout_seconds,
             pip_install_packages="",
         )
         self.remove_tool(self.python)
@@ -118,12 +120,8 @@ class AocPrimeEnv(PythonEnv):
         python_state: PythonWorkerState,
         state: State,
         max_output_length: int = 2000,
-        timeout_seconds: float = 30.0,
     ) -> str:
         self.record_tool_call(state)
-        if timeout_seconds > MAX_TIMEOUT_SECONDS:
-            message = f"timeout_seconds must be <= {MAX_TIMEOUT_SECONDS}"
-            raise ValueError(message)
         try:
             output = await self.python(
                 code=f"{code}\n",
@@ -237,6 +235,7 @@ def load_environment(
     split: str = "train",
     max_examples: int | None = None,
     max_turns: int = 8,
+    command_timeout_seconds: int = DEFAULT_COMMAND_TIMEOUT_SECONDS,
 ) -> vf.Environment:
     resolved_dataset_path = resolve_dataset_path(dataset_path, dataset_repo, dataset_file)
     train_ds, eval_ds = build_datasets(resolved_dataset_path)
@@ -250,4 +249,9 @@ def load_environment(
         raise ValueError("split must be one of: train, eval, validation, test")
     if max_examples is not None:
         dataset = dataset.select(range(min(max_examples, len(dataset))))
-    return AocPrimeEnv(dataset=dataset, eval_dataset=eval_ds, max_turns=max_turns)
+    return AocPrimeEnv(
+        dataset=dataset,
+        eval_dataset=eval_ds,
+        max_turns=max_turns,
+        command_timeout_seconds=command_timeout_seconds,
+    )

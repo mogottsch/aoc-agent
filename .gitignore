@@ -15,6 +15,7 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 .env
+training/local/single-gpu/scripts/local.env
 cache/
 tmp/
 data/

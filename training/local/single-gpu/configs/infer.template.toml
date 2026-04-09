@@ -1,0 +1,10 @@
+[server]
+port = __INFERENCE_PORT__
+
+[model]
+name = "Qwen/Qwen3.5-4B"
+max_model_len = 2048
+
+enable_lora = true
+max_lora_rank = 8
+gpu_memory_utilization = __GPU_MEMORY_UTILIZATION__

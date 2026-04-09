@@ -1,0 +1,41 @@
+output_dir = "__RUN_OUTPUT_DIR__/run_default"
+max_steps = 20
+max_async_level = 1
+batch_size = 8
+rollouts_per_example = 2
+seq_len = 2048
+
+[client]
+base_url = ["http://localhost:__INFERENCE_PORT__/v1"]
+api_key_var = "VLLM_API_KEY"
+
+[ckpt]
+interval = 5
+keep_last = 3
+keep_interval = 10
+
+[sampling]
+max_tokens = 512
+
+[[env]]
+id = "aoc-prime-env"
+name = "aoc-train"
+args = { split = "train", max_examples = 128, max_turns = 12, command_timeout_seconds = 30 }
+
+[val]
+interval = 5
+num_examples = 8
+rollouts_per_example = 1
+
+[eval]
+interval = 10
+
+[eval.sampling]
+max_tokens = 512
+
+[[eval.env]]
+id = "aoc-prime-env"
+name = "aoc-eval"
+args = { split = "eval", max_examples = 16, max_turns = 12, command_timeout_seconds = 30 }
+num_examples = 16
+rollouts_per_example = 1

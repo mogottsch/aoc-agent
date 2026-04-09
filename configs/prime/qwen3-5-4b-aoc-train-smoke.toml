@@ -1,0 +1,12 @@
+name = "qwen3-5-4b-aoc-train-smoke-v1"
+model = "Qwen/Qwen3.5-4B"
+max_steps = 5
+batch_size = 8
+rollouts_per_example = 2
+
+[sampling]
+max_tokens = 512
+
+[[env]]
+id = "mgottsch/aoc-prime-env@0.1.2"
+args = { split = "train", max_examples = 2, max_turns = 16 }

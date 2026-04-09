@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-. "$(git rev-parse --show-toplevel)/training/local/single-gpu/scripts/common.sh"
+. "$(git rev-parse --show-toplevel)/training/local/single-gpu/scripts/_common.sh"
 load_env
 
 require_vars RCLONE_REMOTE_NAME NEXTCLOUD_RUNS_DIR

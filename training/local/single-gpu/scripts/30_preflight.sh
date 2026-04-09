@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-. "$(git rev-parse --show-toplevel)/training/local/single-gpu/scripts/common.sh"
+. "$(git rev-parse --show-toplevel)/training/local/single-gpu/scripts/_common.sh"
 load_env
 require_vars WANDB_API_KEY HF_TOKEN VLLM_API_KEY NEXTCLOUD_URL NEXTCLOUD_USERNAME NEXTCLOUD_APP_PASSWORD RCLONE_REMOTE_NAME NEXTCLOUD_RUNS_DIR
 
@@ -12,7 +12,7 @@ for tool in git uv tmux rclone; do
   fi
 done
 
-"$WORK_DIR/scripts/generate_configs.sh"
+"$WORK_DIR/scripts/15_generate_runtime_configs.sh"
 
 for path in "$WORK_DIR/generated/train.toml" "$WORK_DIR/generated/orch.toml" "$WORK_DIR/generated/infer.toml"; do
   if [ ! -f "$path" ]; then

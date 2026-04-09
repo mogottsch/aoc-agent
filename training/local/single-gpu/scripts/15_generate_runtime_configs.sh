@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-. "$(git rev-parse --show-toplevel)/training/local/single-gpu/scripts/common.sh"
+. "$(git rev-parse --show-toplevel)/training/local/single-gpu/scripts/_common.sh"
 load_env
 
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.4}"

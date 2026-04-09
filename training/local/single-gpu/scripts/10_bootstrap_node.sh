@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-. "$(git rev-parse --show-toplevel)/training/local/single-gpu/scripts/common.sh"
+. "$(git rev-parse --show-toplevel)/training/local/single-gpu/scripts/_common.sh"
 
 apt_get() {
   if [ "$(id -u)" -eq 0 ]; then

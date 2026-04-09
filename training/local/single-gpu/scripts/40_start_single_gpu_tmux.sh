@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-. "$(git rev-parse --show-toplevel)/training/local/single-gpu/scripts/common.sh"
+. "$(git rev-parse --show-toplevel)/training/local/single-gpu/scripts/_common.sh"
 load_env
 require_vars VLLM_API_KEY
 
-"$WORK_DIR/scripts/generate_configs.sh"
+"$WORK_DIR/scripts/15_generate_runtime_configs.sh"
 
 SESSION_NAME="${TMUX_SESSION_NAME:-aoc-single-gpu}"
 GEN_DIR="$(generated_config_dir)"
@@ -26,4 +26,5 @@ tmux new-window -t "$SESSION_NAME" -n trainer -c "$ROOT_DIR"
 tmux send-keys -t "$SESSION_NAME:2" "source \"$ENV_FILE\" && CUDA_VISIBLE_DEVICES=0 uv run trainer @ \"$TRAIN_CONFIG\"" C-m
 
 tmux select-window -t "$SESSION_NAME:0"
-tmux attach-session -t "$SESSION_NAME"
+printf 'started tmux session: %s\n' "$SESSION_NAME"
+printf 'attach with: tmux attach-session -t %s\n' "$SESSION_NAME"

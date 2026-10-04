@@ -1,0 +1,15 @@
+target-version = "py313"
+line-length = 100
+
+[lint]
+select = ["E4", "E7", "E9", "F", "I", "S"]
+# This is a bounded synthetic rehearsal, not production/provider integration.
+# Assertions are evidence gates; orchestrator rejects optimized Python.
+# All-interface binding is confined to the private test pod and ClusterIP.
+# /tmp is a bounded emptyDir, never a hostPath. HTTP targets are exact fake URLs.
+# subprocess uses argument arrays, fixed kubectl, no shell, scrubbed environment.
+# Diagnostic collection is best-effort; failures still raise and cleanup runs.
+ignore = ["S101", "S104", "S108", "S310", "S603", "S110"]
+
+[lint.isort]
+known-first-party = ["aoc_agent", "run", "cpu_watchdog", "cpu_fixture", "cpu_k8s", "cpu_fake_provider", "cpu_probe", "cpu_rehearsal"]

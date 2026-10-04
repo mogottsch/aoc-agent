@@ -1,0 +1,277 @@
+{
+  "schema": "sanitized-kolibri-campaign-v1",
+  "status": "complete",
+  "config": {
+    "benchmark": {
+      "providers": {
+        "kolibri": {
+          "base_url": "http://127.0.0.1:8000/v1",
+          "api_key_env": "KOLIBRI_API_KEY",
+          "type": "openai"
+        }
+      },
+      "models": [
+        {
+          "model": "Aleph-Alpha/Kolibri-1",
+          "provider": "kolibri",
+          "parallelism": 1,
+          "disable_tool_choice": false,
+          "openrouter_provider": null,
+          "output_mode": "tool",
+          "use_responses_api": false
+        }
+      ],
+      "years": [
+        2022,
+        2023
+      ],
+      "per_model_parallelism": 1,
+      "global_parallelism": 1
+    },
+    "model_settings": {
+      "temperature": 1.0,
+      "top_p": 0.97,
+      "max_tokens": 8192,
+      "timeout": 1800,
+      "extra_body": {
+        "top_k": 128,
+        "chat_template_kwargs": {
+          "reasoning_effort": "high",
+          "enable_thinking": true
+        }
+      }
+    }
+  },
+  "pins": {
+    "image_repository": "ghcr.io/aleph-alpha/aleph-alpha-inference",
+    "image_tag": "1.0.0-vllm0.29.0",
+    "image_digest": "sha256:9a56ab1691f8bc8eb0fc82f0f534bfdd36da2218fa79b01b83448739fbda403b",
+    "linux_amd64_digest": "sha256:ac93d782890eb942dd59afa7cee9fa1e681d09f63a0036b21ea7664a254ed7d5",
+    "image_config_digest": "sha256:528d42434a5e2c2f4cfbf7c72c01087dc3dad3788e9743b6a00ebd3410768145",
+    "plugin_release": "v1.0.0",
+    "plugin_commit": "049a6a7bd2405b27d6d280d256bd3d585191c7ae",
+    "vllm_version": "0.29.0",
+    "cuda_version": "13.0.2",
+    "model": "Aleph-Alpha/Kolibri-1",
+    "model_revision": "e52eb4627d11516b0c01de49210ab5a4e4061444",
+    "model_config_sha256": "310443b4224e940682de2b829ba1e377bc39ed7250ac069ce011b8b7c260322f",
+    "generation_config_sha256": "40e0edd01855fc8abdfd2f7b0d4a54c52cf6dea3c678dc68b32c05f19c464450"
+  },
+  "serving": {
+    "max_model_len": 131072,
+    "kv_cache_dtype": "fp8",
+    "gpu_memory_utilization": 0.9,
+    "max_num_seqs": 1
+  },
+  "saved_rows": 50,
+  "error_rows": 0,
+  "both_parts_correct": 39,
+  "final_results_sha256": "7886ef3603b715ad606a0b958389f209d677a7e146485fe31f2c0e3398ebb3b6",
+  "final_seed": {
+    "schema_version": 1,
+    "source_status": "failed",
+    "results_sha256": "d8b7ab3f57375ece46253a5102de7eb9f9e55ea8ba028771af56b11f755a3400",
+    "manifest_sha256": "24275f99ebb77194a6906ea358c5aa476be5b5f0ac5a4993a17c830bb8644b3b",
+    "saved_rows": 49,
+    "completed": [
+      [
+        2022,
+        1
+      ],
+      [
+        2022,
+        2
+      ],
+      [
+        2022,
+        3
+      ],
+      [
+        2022,
+        4
+      ],
+      [
+        2022,
+        5
+      ],
+      [
+        2022,
+        6
+      ],
+      [
+        2022,
+        7
+      ],
+      [
+        2022,
+        8
+      ],
+      [
+        2022,
+        9
+      ],
+      [
+        2022,
+        10
+      ],
+      [
+        2022,
+        11
+      ],
+      [
+        2022,
+        12
+      ],
+      [
+        2022,
+        13
+      ],
+      [
+        2022,
+        14
+      ],
+      [
+        2022,
+        15
+      ],
+      [
+        2022,
+        16
+      ],
+      [
+        2022,
+        17
+      ],
+      [
+        2022,
+        18
+      ],
+      [
+        2022,
+        19
+      ],
+      [
+        2022,
+        20
+      ],
+      [
+        2022,
+        21
+      ],
+      [
+        2022,
+        22
+      ],
+      [
+        2022,
+        23
+      ],
+      [
+        2022,
+        24
+      ],
+      [
+        2022,
+        25
+      ],
+      [
+        2023,
+        1
+      ],
+      [
+        2023,
+        2
+      ],
+      [
+        2023,
+        3
+      ],
+      [
+        2023,
+        4
+      ],
+      [
+        2023,
+        5
+      ],
+      [
+        2023,
+        6
+      ],
+      [
+        2023,
+        7
+      ],
+      [
+        2023,
+        8
+      ],
+      [
+        2023,
+        9
+      ],
+      [
+        2023,
+        10
+      ],
+      [
+        2023,
+        11
+      ],
+      [
+        2023,
+        12
+      ],
+      [
+        2023,
+        13
+      ],
+      [
+        2023,
+        14
+      ],
+      [
+        2023,
+        15
+      ],
+      [
+        2023,
+        16
+      ],
+      [
+        2023,
+        17
+      ],
+      [
+        2023,
+        18
+      ],
+      [
+        2023,
+        19
+      ],
+      [
+        2023,
+        21
+      ],
+      [
+        2023,
+        22
+      ],
+      [
+        2023,
+        23
+      ],
+      [
+        2023,
+        24
+      ],
+      [
+        2023,
+        25
+      ]
+    ],
+    "correctness": "preserved; nonerror does not imply correct"
+  },
+  "methodology": "Resumable multi-attempt campaign, not a fresh single-pass evaluation. Retained non-error outcomes include wrong answers. Only missing/error-bearing days were retried. Infrastructure and execution-resource settings changed during recovery; the opt-in 4 GiB per-process RLIMIT_AS was not applied to every retained row. Reported duration is per accepted row, not total campaign wall time or cost."
+}

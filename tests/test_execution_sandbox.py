@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 from pydantic import ValidationError
 
@@ -129,6 +131,99 @@ def test_sandboxed_kernel_manager_wraps_formatted_command(monkeypatch: pytest.Mo
         "--property=TasksMax=40",
     ]
     assert "{connection_file}" not in command
+
+
+def test_rlimit_env_wraps_kernel_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AOC_SESSION_TOKEN", "test-session")
+    monkeypatch.setenv("EXECUTION_SANDBOX", "rlimit")
+    monkeypatch.setenv("EXECUTION_MEMORY_MB", "4096")
+    monkeypatch.delenv("EXECUTION_CPU_QUOTA_PERCENT", raising=False)
+    monkeypatch.delenv("EXECUTION_TASKS_MAX", raising=False)
+    settings = get_settings()
+    assert settings.execution_memory_mb == 4096
+    assert settings.execution_sandbox.value == "rlimit"
+
+    # No shell interpolation: preserve argv, including spaces and metacharacters.
+    kernel_cmd = ["/path with spaces/python", "-m", "ipykernel_launcher", "a;literal"]
+    monkeypatch.setattr(
+        "jupyter_client.AsyncKernelManager.format_kernel_cmd",
+        lambda self, extra_arguments=None: kernel_cmd,
+    )
+    command = SandboxedKernelManager().format_kernel_cmd()
+    assert command[:2] == [sys.executable, "-c"]
+    assert "resource.setrlimit(resource.RLIMIT_AS, (4294967296, 4294967296))" in command[2]
+    assert "os.execvp(sys.argv[1], sys.argv[1:])" in command[2]
+    assert command[3:] == kernel_cmd
+
+
+@pytest.mark.parametrize(
+    "memory",
+    [None, 0, -1, 512, 4095, 4097, 2**63, 4096.0, True, "4096.0", "4Gi", ""],
+)
+def test_rlimit_rejects_invalid_memory(memory: object) -> None:
+    with pytest.raises(ValidationError, match="4096"):
+        Settings.model_validate(
+            {
+                "AOC_SESSION_TOKEN": "test-session",
+                "EXECUTION_SANDBOX": "rlimit",
+                "EXECUTION_MEMORY_MB": memory,
+            },
+            by_alias=True,
+        )
+    with pytest.raises(ValidationError, match="4096"):
+        ExecutionSandboxSettings.model_validate({"backend": "rlimit", "memory_mb": memory})
+
+
+def test_rlimit_field_name_validation_cannot_bypass_literal_memory() -> None:
+    with pytest.raises(ValidationError, match="4096"):
+        Settings.model_validate(
+            {
+                "aoc_session_token": "test-session",
+                "execution_sandbox": "rlimit",
+                "execution_memory_mb": 4096.0,
+            },
+            by_name=True,
+        )
+
+
+def test_rlimit_requires_explicit_memory() -> None:
+    with pytest.raises(ValidationError, match="4096"):
+        Settings.model_validate(
+            {"AOC_SESSION_TOKEN": "test-session", "EXECUTION_SANDBOX": "rlimit"},
+            by_alias=True,
+        )
+    with pytest.raises(ValidationError, match="4096"):
+        ExecutionSandboxSettings(backend="rlimit")
+
+
+@pytest.mark.parametrize(
+    ("setting", "adapter_setting", "value"),
+    [
+        ("EXECUTION_CPU_QUOTA_PERCENT", "cpu_quota_percent", 75),
+        ("EXECUTION_TASKS_MAX", "tasks_max", 32),
+    ],
+)
+def test_rlimit_rejects_unenforced_limits(
+    setting: str,
+    adapter_setting: str,
+    value: int,
+) -> None:
+    with pytest.raises(ValidationError, match="cgroup"):
+        Settings.model_validate(
+            {
+                "AOC_SESSION_TOKEN": "test-session",
+                "EXECUTION_SANDBOX": "rlimit",
+                "EXECUTION_MEMORY_MB": 4096,
+                setting: value,
+            },
+            by_alias=True,
+        )
+    with pytest.raises(ValidationError, match="cgroup"):
+        ExecutionSandboxSettings(
+            backend="rlimit",
+            memory_mb=4096,
+            **{adapter_setting: value},
+        )
 
 
 @pytest.fixture(autouse=True)

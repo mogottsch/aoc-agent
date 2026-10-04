@@ -1,0 +1,7 @@
+extend = "../../pyproject.toml"
+
+[lint.per-file-ignores]
+# Standalone sidecar scripts; lazy imports keep read-only preparation lightweight.
+"*.py" = ["INP001", "PLC0415"]
+# Tests deliberately use fixtures, literal expectations and fixed subprocess entrypoints.
+"tests/*.py" = ["INP001", "PLC0415", "ANN", "PLR2004", "S101", "S603", "S108", "ARG001", "C901", "PLR0911"]

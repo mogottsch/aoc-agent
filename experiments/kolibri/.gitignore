@@ -1,0 +1,29 @@
+# Private runtime artifacts; public result exports outside runs remain eligible.
+runs/
+evidence/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+
+# Raw cleanup/provider logs may contain private infrastructure metadata.
+FINAL_CLEANUP.log
+*.log
+
+# Credential, transport and operator receipt files must never be committed.
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+resume-transport.json
+transport.json
+private-config.json
+private-config.yaml
+private-config.yml
+private-config.toml
+credentials.json
+token-config.json
+watchdog-receipt.json

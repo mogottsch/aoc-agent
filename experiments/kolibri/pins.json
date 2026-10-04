@@ -1,0 +1,15 @@
+{
+  "image_repository": "ghcr.io/aleph-alpha/aleph-alpha-inference",
+  "image_tag": "1.0.0-vllm0.29.0",
+  "image_digest": "sha256:9a56ab1691f8bc8eb0fc82f0f534bfdd36da2218fa79b01b83448739fbda403b",
+  "linux_amd64_digest": "sha256:ac93d782890eb942dd59afa7cee9fa1e681d09f63a0036b21ea7664a254ed7d5",
+  "image_config_digest": "sha256:528d42434a5e2c2f4cfbf7c72c01087dc3dad3788e9743b6a00ebd3410768145",
+  "plugin_release": "v1.0.0",
+  "plugin_commit": "049a6a7bd2405b27d6d280d256bd3d585191c7ae",
+  "vllm_version": "0.29.0",
+  "cuda_version": "13.0.2",
+  "model": "Aleph-Alpha/Kolibri-1",
+  "model_revision": "e52eb4627d11516b0c01de49210ab5a4e4061444",
+  "model_config_sha256": "310443b4224e940682de2b829ba1e377bc39ed7250ac069ce011b8b7c260322f",
+  "generation_config_sha256": "40e0edd01855fc8abdfd2f7b0d4a54c52cf6dea3c678dc68b32c05f19c464450"
+}

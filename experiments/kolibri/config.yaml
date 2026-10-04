@@ -1,0 +1,25 @@
+# Sidecar schema, not the core benchmark CLI schema. No day subset.
+benchmark:
+  providers:
+    kolibri:
+      base_url: http://127.0.0.1:8000/v1
+      api_key_env: KOLIBRI_API_KEY
+      type: openai
+  models:
+    - model: Aleph-Alpha/Kolibri-1
+      provider: kolibri
+      parallelism: 1
+      output_mode: tool
+  years: [2022, 2023]
+  per_model_parallelism: 1
+  global_parallelism: 1
+model_settings:
+  temperature: 1.0
+  top_p: 0.97
+  max_tokens: 8192
+  timeout: 1800
+  extra_body:
+    top_k: 128
+    chat_template_kwargs:
+      reasoning_effort: high
+      enable_thinking: true

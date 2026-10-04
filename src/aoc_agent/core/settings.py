@@ -12,11 +12,38 @@ from aoc_agent.core.constants import OutputMode
 class ExecutionSandbox(StrEnum):
     LOCAL = "local"
     CGROUP = "cgroup"
+    RLIMIT = "rlimit"
 
 
 DEFAULT_EXECUTION_MEMORY_MB = 512
 DEFAULT_EXECUTION_CPU_QUOTA_PERCENT = 100
 DEFAULT_EXECUTION_TASKS_MAX = 64
+RLIMIT_EXECUTION_MEMORY_MB = 4096
+
+
+def validate_rlimit_configuration(
+    backend: object,
+    memory_mb: object,
+    cpu_quota_percent: object,
+    tasks_max: object,
+) -> None:
+    # Match enum coercion before branching, but keep raw memory validation strict.
+    if isinstance(backend, bytes):
+        backend = backend.decode("utf-8")
+    if backend != ExecutionSandbox.RLIMIT:
+        return
+    if not (
+        (type(memory_mb) is int and memory_mb == RLIMIT_EXECUTION_MEMORY_MB)
+        or (isinstance(memory_mb, str) and memory_mb == str(RLIMIT_EXECUTION_MEMORY_MB))
+    ):
+        raise ValueError("EXECUTION_SANDBOX=rlimit requires literal EXECUTION_MEMORY_MB=4096")
+    if cpu_quota_percent not in (
+        DEFAULT_EXECUTION_CPU_QUOTA_PERCENT,
+        str(DEFAULT_EXECUTION_CPU_QUOTA_PERCENT),
+    ):
+        raise ValueError("EXECUTION_CPU_QUOTA_PERCENT requires EXECUTION_SANDBOX=cgroup")
+    if tasks_max not in (DEFAULT_EXECUTION_TASKS_MAX, str(DEFAULT_EXECUTION_TASKS_MAX)):
+        raise ValueError("EXECUTION_TASKS_MAX requires EXECUTION_SANDBOX=cgroup")
 
 
 class Settings(BaseSettings):
@@ -43,6 +70,29 @@ class Settings(BaseSettings):
     execution_tasks_max: int = Field(
         default=DEFAULT_EXECUTION_TASKS_MAX, alias="EXECUTION_TASKS_MAX"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_rlimit_config(cls, values: object) -> object:
+        if isinstance(values, dict):
+            validate_rlimit_configuration(
+                values.get(
+                    "EXECUTION_SANDBOX", values.get("execution_sandbox", ExecutionSandbox.LOCAL)
+                ),
+                values.get(
+                    "EXECUTION_MEMORY_MB",
+                    values.get("execution_memory_mb", DEFAULT_EXECUTION_MEMORY_MB),
+                ),
+                values.get(
+                    "EXECUTION_CPU_QUOTA_PERCENT",
+                    values.get("execution_cpu_quota_percent", DEFAULT_EXECUTION_CPU_QUOTA_PERCENT),
+                ),
+                values.get(
+                    "EXECUTION_TASKS_MAX",
+                    values.get("execution_tasks_max", DEFAULT_EXECUTION_TASKS_MAX),
+                ),
+            )
+        return values
 
     @model_validator(mode="after")
     def validate_execution_sandbox(self) -> "Settings":

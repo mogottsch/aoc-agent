@@ -28,12 +28,11 @@ async def jupyter_context(context: ToolContext) -> AsyncIterator[ToolContext]:
     km = SandboxedKernelManager()
     await km.start_kernel()
     client = km.client()
-    client.start_channels()
-    async with asyncio.timeout(30):
-        await client.wait_for_ready()
-
     executor = JupyterExecutor(client, km)
     try:
+        client.start_channels()
+        async with asyncio.timeout(30):
+            await client.wait_for_ready()
         yield context.model_copy(update={"executor": executor})
     finally:
         await executor.close()
